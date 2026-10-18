@@ -2,113 +2,68 @@
 <html lang="en"><head><meta charset="utf-8"><title>Ludo with Friends</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-:root{--bg:#d7b899;--fg:#222;--card:#f4e4bc;--mut:#555;--line:#b08d65}
+:root{--bg:#f4f1ec;--card:#fff;--fg:#1f1f1f;--mut:#777;--line:#e4ded4;--pri:#2b7a4b}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1a18;--card:#26241f;--fg:#eee;--mut:#9a958b;--line:#3a372f}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:12px}
-.wrap{max-width:560px;margin:0 auto}
-h1{font-size:22px;margin:4px 0 12px;text-align:center;color:#332211;text-shadow:0 1px 0 rgba(255,255,255,0.4)}
-.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--fg);width:100%;margin:4px 0 8px}
-button{font:inherit;padding:10px 16px;border-radius:10px;border:0;background:#2b7a4b;color:#fff;cursor:pointer;margin:2px;font-weight:700;transition:transform 0.1s ease, filter 0.2s ease}
-button:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
-button:active:not(:disabled){transform:translateY(0)}
-button.alt{background:#8c6d53;color:#fff}button:disabled{opacity:.4;cursor:default}
-.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.seat{flex:1 1 45%;border:2px solid;border-radius:10px;padding:6px 8px;font-size:14px;background:rgba(255,255,255,0.6);transition:all 0.3s ease}
-.seat.on{background:rgba(43,122,75,0.25);box-shadow:0 0 10px rgba(43,122,75,0.4)}
-svg{width:100%;height:auto;display:block;touch-action:manipulation;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
-.mut{color:var(--mut);font-size:14px}
-
-/* --- Full-Board Tumbling 3D Dice Simulation --- */
-.dice-scene {
-  width: 64px;
-  height: 64px;
-  perspective: 900px;
-  display: inline-block;
-  margin: 0 10px;
-  vertical-align: middle;
-  position: relative;
-}
-.dice-cube {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  transform: rotateX(20deg) rotateY(20deg);
-  transition: transform 1.1s cubic-bezier(0.08, 0.82, 0.15, 1.02);
-}
-@keyframes fullBoardTumble {
-  0% { transform: rotateX(0deg) rotateY(0deg) translate3d(0, 0, 0) scale(1); }
-  15% { transform: rotateX(540deg) rotateY(360deg) translate3d(-120px, -180px, 80px) scale(1.2); }
-  35% { transform: rotateX(1080deg) rotateY(720deg) translate3d(140px, -240px, 120px) scale(1.25); }
-  55% { transform: rotateX(1620deg) rotateY(1080deg) translate3d(-100px, -100px, 60px) scale(1.15); }
-  75% { transform: rotateX(2160deg) rotateY(1440deg) translate3d(80px, -50px, 30px) scale(1.08); }
-  90% { transform: rotateX(2520deg) rotateY(1710deg) translate3d(-20px, -10px, 10px) scale(1.02); }
-  100% { transform: rotateX(2880deg) rotateY(1980deg) translate3d(0, 0, 0) scale(1); }
-}
-.dice-cube.rolling {
-  animation: fullBoardTumble 1.0s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
-  z-index: 100;
-}
-.dice-face {
-  position: absolute;
-  width: 64px;
-  height: 64px;
-  background: #ffffff;
-  border: 2px solid #b5b5b5;
-  border-radius: 12px;
-  display: grid;
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  padding: 8px;
-  box-shadow: inset 0 4px 8px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
-}
-.dot {
-  background: #111;
-  border-radius: 50%;
-  width: 9px;
-  height: 9px;
-  align-self: center;
-  justify-self: center;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
-}
-.face-1 { transform: rotateY(0deg) translateZ(32px); }
-.face-6 { transform: rotateY(180deg) translateZ(32px); }
-.face-2 { transform: rotateY(-90deg) translateZ(32px); }
-.face-5 { transform: rotateY(90deg) translateZ(32px); }
-.face-3 { transform: rotateX(90deg) translateZ(32px); }
-.face-4 { transform: rotateX(-90deg) translateZ(32px); }
-
-.d-center { grid-area: 2 / 2 / 3 / 3; }
-.d-tl { grid-area: 1 / 1 / 2 / 2; }
-.d-tr { grid-area: 1 / 3 / 2 / 4; }
-.d-bl { grid-area: 3 / 1 / 4 / 2; }
-.d-br { grid-area: 3 / 3 / 4 / 4; }
-.d-ml { grid-area: 2 / 1 / 3 / 2; }
-.d-mr { grid-area: 2 / 3 / 3 / 4; }
+.wrap{max-width:520px;margin:0 auto}
+h1{font-size:20px;margin:6px 0 12px;text-align:center;font-weight:700;letter-spacing:.2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.mut{color:var(--mut);font-size:13px}
+input{font:inherit;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;margin:4px 0 10px}
+button{font:inherit;font-weight:600;padding:11px 16px;border-radius:10px;border:0;background:var(--pri);color:#fff;cursor:pointer}
+button:active:not(:disabled){opacity:.8}button:disabled{opacity:.35;cursor:default}
+button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);padding:6px 10px;font-size:13px;font-weight:500}
+.row{display:flex;gap:8px;align-items:center}.sp{flex:1}
+.join{display:flex;gap:8px}.join input{margin:0;text-transform:uppercase}
+.seats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 12px}
+.seat{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);font-size:14px;min-width:0}
+.seat.on{border-color:var(--pri);background:rgba(43,122,75,.12)}
+.seat b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat a{color:var(--mut);text-decoration:none}
+.dotc{width:12px;height:12px;border-radius:50%;flex:none}
+svg{width:100%;height:auto;display:block;touch-action:manipulation;border-radius:10px}
+.ctrl{display:flex;align-items:center;gap:14px;margin-top:14px}
+.ctrl button{flex:1;padding:14px;font-size:16px}
+.stat{font-weight:600;font-size:15px;margin-top:12px;text-align:center}
+.log{margin:4px 0 0;text-align:center;color:var(--mut);font-size:13px;min-height:18px}
+details{margin-top:2px}summary{cursor:pointer;color:var(--mut);font-size:14px}details p{font-size:13px;color:var(--mut);line-height:1.5;margin:8px 0 0}
+.dice-scene{width:56px;height:56px;perspective:700px;flex:none;margin:6px}
+.dice-cube{width:100%;height:100%;position:relative;transform-style:preserve-3d;transform:var(--rot)}
+@keyframes tumble{
+ 0%{transform:translateY(0) rotateX(0deg) rotateY(0deg) var(--rot)}
+ 35%{transform:translateY(-26px) rotateX(540deg) rotateY(360deg) var(--rot)}
+ 70%{transform:translateY(-6px) rotateX(900deg) rotateY(600deg) var(--rot)}
+ 100%{transform:translateY(0) rotateX(1080deg) rotateY(720deg) var(--rot)}}
+.dice-cube.rolling{animation:tumble .9s cubic-bezier(.25,.6,.35,1) 1}
+.dice-face{position:absolute;width:56px;height:56px;background:#fff;border:1px solid #cfcfcf;border-radius:10px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:7px;backface-visibility:hidden}
+.dot{background:#111;border-radius:50%;width:8px;height:8px;align-self:center;justify-self:center}
+.face-1{transform:rotateY(0deg) translateZ(28px)}.face-6{transform:rotateY(180deg) translateZ(28px)}
+.face-2{transform:rotateY(-90deg) translateZ(28px)}.face-5{transform:rotateY(90deg) translateZ(28px)}
+.face-3{transform:rotateX(90deg) translateZ(28px)}.face-4{transform:rotateX(-90deg) translateZ(28px)}
+.d-center{grid-area:2/2/3/3}.d-tl{grid-area:1/1/2/2}.d-tr{grid-area:1/3/2/4}.d-bl{grid-area:3/1/4/2}.d-br{grid-area:3/3/4/4}.d-ml{grid-area:2/1/3/2}.d-mr{grid-area:2/3/3/4}
 @keyframes p{50%{opacity:.35}}.mv{animation:p .8s infinite;cursor:pointer}
 </style></head><body><div class="wrap">
 <h1>🎲 Ludo with Friends</h1><div id="app"></div></div>
 <script>
 const C=['R','G','Y','B'],COL={R:'#d62828',G:'#13a04a',Y:'#e09f1f',B:'#1f5fd6'},NM={R:'Red',G:'Green',Y:'Yellow',B:'Blue'};
-const ST={R:0,G:13,Y:26,B:39},SAFE=new Set([0,13,26,39]),U=40;
+const ST={R:0,G:13,Y:26,B:39},U=40;
 const RING=[],add=(a,c,r,dc,dr,n)=>{for(let i=0;i<n;i++)a.push([c+dc*i,r+dr*i])};
 add(RING,1,6,1,0,5);add(RING,6,5,0,-1,6);add(RING,7,0,1,0,2);add(RING,8,1,0,1,5);add(RING,9,6,1,0,6);add(RING,14,7,0,1,2);add(RING,13,8,-1,0,5);add(RING,8,9,0,1,6);add(RING,7,14,-1,0,2);add(RING,6,13,0,-1,5);add(RING,5,8,-1,0,6);add(RING,0,7,0,-1,2);
 const HOME={R:[],G:[],Y:[],B:[]};add(HOME.R,1,7,1,0,5);add(HOME.G,7,1,0,1,5);add(HOME.Y,13,7,-1,0,5);add(HOME.B,7,13,0,-1,5);
 const OR={R:[0,0],G:[9,0],Y:[9,9],B:[0,9]},FIN={R:[6.6,7.5],G:[7.5,6.6],Y:[8.4,7.5],B:[7.5,8.4]};
-
-let G=null,code='',me='',myName='',isHost=false,ws=null,tm=null,isRolling=false,snd=true;
+let G=null,code='',me='',myName='',isHost=false,ws=null,tm=null,isRolling=false,snd=true,lastMsg='';
 const $=s=>document.getElementById(s);
-try{myName=localStorage.getItem('ludo-name')||''}catch(e){}
+try{myName=localStorage.getItem('ludo-name')||'';snd=localStorage.getItem('ludo-snd')!=='off'}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* ---------- Sound System ---------- */
+/* ---------- sound ---------- */
 let AC=null;
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==='suspended')AC.resume();return AC}
 ['click','touchstart'].forEach(ev=>document.addEventListener(ev,ac,{passive:true}));
-
 function nz(a,len){const b=a.createBuffer(1,len,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<len;i++)x[i]=Math.random()*2-1;return b}
 function knock(t,v,f,damp){
-  const a=ac(),o=a?a.destination:null;if(!a||!snd||!o)return;const n=a.currentTime+t;
+  const a=ac();if(!a||!snd)return;const o=a.destination,n=a.currentTime+t;
   const s=a.createBufferSource(),bp=a.createBiquadFilter(),lp=a.createBiquadFilter(),g=a.createGain();
   s.buffer=nz(a,Math.floor(a.sampleRate*.03));bp.type='bandpass';bp.frequency.value=f*1.8;bp.Q.value=.7;
   lp.type='lowpass';lp.frequency.value=2500+f*(1-damp)*4;
@@ -125,41 +80,36 @@ function rollSnd(){
   for(let i=0;i<16;i++)knock(RN(0,.35),RN(.06,.14),RN(300,700),.8);
   let t=.35,gap=.11,v=.7;
   for(let i=0;i<6;i++){knock(t,v,RN(350,600),.85);t+=gap;gap*=.68;v*=.6}
-  setTimeout(()=>{knock(0.95, 0.95, 200, 0.95);}, 900);
+  knock(.95,.95,200,.95);
 }
-function moveSnd(){
-  const a=ac();if(!a||!snd)return;const n=a.currentTime,s=a.createBufferSource(),hp=a.createBiquadFilter(),g=a.createGain();
-  s.buffer=nz(a,Math.floor(a.sampleRate*.09));hp.type='highpass';hp.frequency.value=3000;
-  g.gain.setValueAtTime(.001,n);g.gain.linearRampToValueAtTime(.05,n+.03);g.gain.exponentialRampToValueAtTime(.001,n+.09);
-  s.connect(hp);hp.connect(g);g.connect(a.destination);s.start(n);
-  knock(0.05, 0.55, 820, 0.8);
-  knock(0.12, 0.28, 640, 0.8);
-}
+function moveSnd(){knock(0,.55,820,.8);knock(.07,.28,640,.8)}
 function sfx(p,g){
   if(!p||p.log===g.log)return;
   if(/ rolled /.test(g.log))rollSnd();
-  else if(JSON.stringify(p.tokens)!==JSON.stringify(g.tokens)){moveSnd();}
+  else if(JSON.stringify(p.tokens)!==JSON.stringify(g.tokens))moveSnd();
 }
-function toggleSnd(){snd=!snd;draw()}
+function toggleSnd(){snd=!snd;try{localStorage.setItem('ludo-snd',snd?'on':'off')}catch(e){}if(snd)ac();G?draw():lobby(lastMsg)}
 
+/* ---------- screens ---------- */
 function lobby(msg){
-  G=null;
-  $('app').innerHTML=`<div class="card"><b>Play with friends</b><p class="mut">Create a game, then share the 5-letter code. Up to 4 players, wood board theme with full-board 3D dice tumbling.</p>
-  <label class="mut" for="nm">1. Enter your name</label>
-  <input id="nm" placeholder="Your name" maxlength="14" value="${esc(myName)}">
-  <div class="mut" style="margin-top:6px">2. Start a game or join a friend’s</div>
-  <button onclick="create()">Create game</button>
-  <input id="cd" placeholder="Friend’s game code" maxlength="5" style="text-transform:uppercase;margin-top:12px">
-  <button class="alt" onclick="join()">Join game</button><p class="mut">${msg||''}</p></div>
-  <div class="card mut">Rules: rolling a 1 or 6, capturing a token, or reaching home gives another turn · roll a 1 to bring a token out of base · you must capture when you can · home lane is locked until you make your first capture (🔒) · rolling 1 three times sends nearest home back to base · exact roll to finish.<br><br><button class="alt" onclick="toggleSnd()" style="margin-top:8px">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div>`;
+  G=null;lastMsg=msg||'';
+  $('app').innerHTML=`<div class="card">
+  <label class="mut" for="nm">Your name</label>
+  <input id="nm" placeholder="Enter your name" maxlength="14" value="${esc(myName)}">
+  <button style="width:100%" onclick="create()">Create new game</button>
+  <div class="mut" style="text-align:center;margin:14px 0 8px">or join a friend</div>
+  <div class="join"><input id="cd" placeholder="Game code" maxlength="5"><button onclick="join()">Join</button></div>
+  <p class="mut" style="margin:10px 0 0;min-height:16px">${msg||''}</p></div>
+  <div class="card"><details><summary>How to play</summary>
+  <p>Roll a 1 to bring a token out. A 1, a 6, a capture, or reaching home gives another turn. You must capture when you can. The home lane unlocks after your first capture (⚔). Three 1s in a row sends your front token back to base. Exact roll to finish. Only start squares are safe.</p></details></div>
+  <div style="text-align:center"><button class="ghost" onclick="toggleSnd()">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div>`;
 }
 function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter your name first.');return false}myName=v;try{localStorage.setItem('ludo-name',myName)}catch(e){}return true}
 
 /* ---------- networking ---------- */
 try{me=localStorage.getItem('ludo-id')||''}catch(e){}
 if(!me){me='p'+Math.random().toString(36).slice(2,12);try{localStorage.setItem('ludo-id',me)}catch(e){}}
-
-const wait=m=>{$('app').innerHTML=`<div class="card">${m}</div>`};
+const wait=m=>{$('app').innerHTML=`<div class="card" style="text-align:center">${m}</div>`};
 const keep=v=>{try{v?localStorage.setItem('ludo-room',v):localStorage.removeItem('ludo-room')}catch(e){}};
 function connect(first){
   clearTimeout(tm);
@@ -168,20 +118,13 @@ function connect(first){
   tm=setTimeout(()=>{if(!G)lobby('Could not reach the server. It may be waking up, so wait a minute and try again.')},60000);
   ws.onopen=()=>ws.send(JSON.stringify(first));
   ws.onmessage=e=>{
-    clearTimeout(tm);const d=JSON.parse(e.data);
+    clearTimeout(tm);let d;try{d=JSON.parse(e.data)}catch(x){return}
     if(d.err){G=null;keep('');ws.onclose=null;ws.close();return lobby(d.err)}
     if(d.s){
-      const prevDice = G ? G.dice : 0;
-      const pv = G;
-      G=d.s; code=d.code||code; isHost=G.host===me; keep(code);
-      sfx(pv, G);
-      if(G.dice && G.dice !== prevDice) {
-        isRolling = true;
-        draw();
-        setTimeout(() => { isRolling = false; draw(); }, 1000);
-      } else {
-        draw();
-      }
+      const pv=G;G=d.s;code=d.code||code;isHost=G.host===me;keep(code);
+      sfx(pv,G);
+      if(/ rolled /.test(G.log)&&(!pv||pv.log!==G.log)){isRolling=true;draw();setTimeout(()=>{isRolling=false;draw()},950)}
+      else draw();
     }
   };
   ws.onclose=()=>{
@@ -204,58 +147,42 @@ function send(d){if(ws&&ws.readyState===1)ws.send(JSON.stringify(d))}
 const seated=()=>C.filter(c=>G.seats[c]);
 const seatOf=id=>C.find(c=>G.seats[c]===id);
 function copyCode(){
-  navigator.clipboard.writeText(code).then(()=>{
-    alert('Game code ' + code + ' copied to clipboard!');
-  }).catch(()=>{});
+  const done=()=>alert('Game code '+code+' copied!');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(code).then(done).catch(()=>prompt('Copy this code:',code));
+  else prompt('Copy this code:',code);
 }
 
-/* ---------- 3D Dice Generator ---------- */
-function render3DDice(val, rolling){
-  const rotations = {
-    1: 'rotateX(0deg) rotateY(0deg)',
-    2: 'rotateY(-90deg)',
-    3: 'rotateX(-90deg)',
-    4: 'rotateX(90deg)',
-    5: 'rotateY(90deg)',
-    6: 'rotateY(180deg)'
-  };
-  const rot = rotations[val] || 'rotateX(0deg) rotateY(0deg)';
-  const cubeClass = rolling ? 'dice-cube rolling' : 'dice-cube';
-
-  return `
-    <div class="dice-scene">
-      <div class="${cubeClass}" style="transform: ${rot}">
-        <div class="dice-face face-1"><div class="dot d-center"></div></div>
-        <div class="dice-face face-2"><div class="dot d-tl"></div><div class="dot d-br"></div></div>
-        <div class="dice-face face-3"><div class="dot d-tl"></div><div class="dot d-center"></div><div class="dot d-br"></div></div>
-        <div class="dice-face face-4"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
-        <div class="dice-face face-5"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-center"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
-        <div class="dice-face face-6"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-ml"></div><div class="dot d-mr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
-      </div>
-    </div>
-  `;
+/* ---------- dice ---------- */
+function dice(val,rolling){
+  const R={1:'rotateX(0deg)',2:'rotateY(90deg)',3:'rotateX(-90deg)',4:'rotateX(90deg)',5:'rotateY(-90deg)',6:'rotateY(180deg)'};
+  return `<div class="dice-scene"><div class="dice-cube${rolling?' rolling':''}" style="--rot:${R[val]||R[1]}">
+  <div class="dice-face face-1"><div class="dot d-center"></div></div>
+  <div class="dice-face face-2"><div class="dot d-tl"></div><div class="dot d-br"></div></div>
+  <div class="dice-face face-3"><div class="dot d-tl"></div><div class="dot d-center"></div><div class="dot d-br"></div></div>
+  <div class="dice-face face-4"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+  <div class="dice-face face-5"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-center"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+  <div class="dice-face face-6"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-ml"></div><div class="dot d-mr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+  </div></div>`;
 }
 
-/* ---------- drawing ---------- */
+/* ---------- board ---------- */
 function pos(c,p,i){
   if(p<0)return[OR[c][0]+2+(i%2)*2,OR[c][1]+2+(i>>1)*2];
   if(p<=51){const r=RING[(ST[c]+p)%52];return[r[0]+.5,r[1]+.5]}
   if(p<105){const r=HOME[c][p-100];return[r[0]+.5,r[1]+.5]}
   const f=FIN[c],o=(i-1.5)*.16;return c==='R'||c==='Y'?[f[0],f[1]+o]:[f[0]+o,f[1]];
 }
+const prog=v=>v<0?0:v>=105?57:v>=100?52+(v-100):v+1;
+const pct=c=>Math.round(G.tokens[c].reduce((a,v)=>a+prog(v),0)/(4*57)*100);
 function board(mv){
-  const K='#3a2817',L=1.5;
+  const K='#3a2817',L=1.2;
   let s=`<svg viewBox="0 0 600 600"><rect width="600" height="600" fill="#fcf6ec"/>`;
   C.forEach(c=>{const[x,y]=OR[c];
-    s+=`<rect x="${x*U}" y="${y*U}" width="${6*U}" height="${6*U}" fill="${COL[c]}" stroke="${K}" stroke-width="3"/><rect x="${(x+1)*U}" y="${(y+1)*U}" width="${4*U}" height="${4*U}" rx="14" fill="#fff" stroke="${K}" stroke-width="3"/>`;
-    for(let i=0;i<4;i++){const q=pos(c,-1,i);s+=`<circle cx="${q[0]*U}" cy="${q[1]*U}" r="19" fill="#fff" stroke="${COL[c]}" stroke-width="5"/>`}
+    s+=`<rect x="${x*U}" y="${y*U}" width="${6*U}" height="${6*U}" fill="${COL[c]}" stroke="${K}" stroke-width="2.5"/><rect x="${(x+1)*U}" y="${(y+1)*U}" width="${4*U}" height="${4*U}" rx="14" fill="#fff" stroke="${K}" stroke-width="2"/>`;
+    for(let i=0;i<4;i++){const q=pos(c,-1,i);s+=`<circle cx="${q[0]*U}" cy="${q[1]*U}" r="18" fill="#fff" stroke="${COL[c]}" stroke-width="4"/>`}
     if(G.seats[c]){
-      const nameTxt = G.names[c] + (G.seats[c]===me?' (you)':'');
-      s+=`<rect x="${(x+.5)*U}" y="${(y+.2)*U}" width="5*U" height="1.1*U" rx="6" fill="rgba(0,0,0,0.6)"/>`;
-      s+=`<text x="${(x+3)*U}" y="${(y+.75)*U}" font-size="16" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#fff">${esc(nameTxt)}</text>`;
-      s+=`<rect x="${(x+.5)*U}" y="${(y+4.7)*U}" width="5*U" height="1*U" rx="6" fill="#003366"/>`;
-      s+=`<text x="${(x+3)*U}" y="${(y+5.2)*U}" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#00e5ff">0.0%</text>`;
-    }
+      const t=(G.phase==='play'&&G.turn===c&&!G.winner?'▶ ':'')+G.names[c]+(G.seats[c]===me?' (you)':'');
+      s+=`<text x="${(x+3)*U}" y="${(y+.5)*U}" font-size="16" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${c==='Y'?'#1a1a1a':'#fff'}">${esc(t)}</text>`}
   });
   RING.forEach((r,i)=>{const sc=C.find(c=>ST[c]===i);s+=`<rect x="${r[0]*U}" y="${r[1]*U}" width="${U}" height="${U}" fill="${sc?COL[sc]:'#fff'}" stroke="${K}" stroke-width="${L}"/>`});
   C.forEach(c=>HOME[c].forEach(r=>s+=`<rect x="${r[0]*U}" y="${r[1]*U}" width="${U}" height="${U}" fill="${COL[c]}" stroke="${K}" stroke-width="${L}"/>`));
@@ -265,31 +192,29 @@ function board(mv){
   const seen={};
   C.forEach(c=>{if(!G.seats[c])return;G.tokens[c].forEach((p,i)=>{
     const q=pos(c,p,i),key=p<0?'b'+c+i:q[0]+','+q[1],n=seen[key]=(seen[key]||0)+1;
-    const o=p<0||p>=105?0:(n-1)*.16,can=mv&&c===G.turn&&mv.includes(i),cx=(q[0]+o)*U,cy=(q[1]-o)*U,r=p<0?15:p>=105?8:n>1?12:16;
+    const o=p<0||p>=105?0:(n-1)*.16,can=mv&&c===G.turn&&mv.includes(i),cx=(q[0]+o)*U,cy=(q[1]-o)*U,r=p<0?14:p>=105?8:n>1?12:15;
     if(can)s+=`<circle class="mv" cx="${cx}" cy="${cy}" r="${r+7}" fill="none" stroke="${K}" stroke-width="3" stroke-dasharray="5 4" style="pointer-events:none"/>`;
-    s+=`<circle ${can?`class="mv" onclick="send({t:'move',i:${i}})"`:''} cx="${cx}" cy="${cy}" r="${r}" fill="${COL[c]}" stroke="${K}" stroke-width="3.5"/><circle cx="${cx}" cy="${cy}" r="${Math.max(3,r/3)}" fill="#fff" fill-opacity=".9" style="pointer-events:none"/>`;
-    
-    if(p < 100 && !G.cut[c]) {
-      s+=`<circle cx="${cx}" cy="${cy}" r="9" fill="#fff" stroke="#333" stroke-width="1" style="pointer-events:none"/>`;
-      s+=`<text x="${cx}" y="${cy}" font-size="10" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">🔒</text>`;
-    }
+    s+=`<circle ${can?`class="mv" onclick="send({t:'move',i:${i}})"`:''} cx="${cx}" cy="${cy}" r="${r}" fill="${COL[c]}" stroke="${K}" stroke-width="3"/><circle cx="${cx}" cy="${cy}" r="${Math.max(3,r/3)}" fill="#fff" fill-opacity=".9" style="pointer-events:none"/>`;
   })});
   return s+'</svg>';
 }
+
+/* ---------- main view ---------- */
 function draw(){
-  if(!G)return;const my=seatOf(me);
-  let h=`<div class="card"><div class="row"><b>Game ${code}</b> <button class="alt" style="padding:4px 8px;font-size:12px" onclick="copyCode()">Copy Code</button><button class="alt" style="padding:4px 8px;font-size:12px;margin-left:auto" onclick="leaveRoom()">Leave room</button><button class="alt" style="padding:4px 8px;font-size:12px" onclick="toggleSnd()">${snd?'🔊':'🔇'}</button></div><div class="row" style="margin-top:8px">`;
+  if(!G)return;const my=seatOf(me),play=G.phase==='play';
+  let h=`<div class="card"><div class="row"><button class="ghost" onclick="copyCode()">Code ${esc(code)} ⧉</button><span class="sp"></span><button class="ghost" onclick="toggleSnd()">${snd?'🔊':'🔇'}</button><button class="ghost" onclick="leaveRoom()">Leave</button></div><div class="seats">`;
   C.forEach(c=>{const o=G.seats[c];
-    h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':'')+(G.cut&&G.cut[c]?' ⚔':''):(G.phase==='lobby'?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">${my?'Move here':'Sit as '+NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
+    h+=`<div class="seat ${play&&G.turn===c&&!G.winner?'on':''}"><span class="dotc" style="background:${COL[c]}"></span>`+
+    (o?`<b>${esc(G.names[c])}${o===me?' (you)':''}</b>`+(play?`<span class="mut" style="margin-left:auto">${G.cut&&G.cut[c]?'⚔':'🔒'} ${pct(c)}%</span>`:'')
+      :(G.phase==='lobby'?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false">${my?'Move here':'Sit here'}</a>`:'<span class="mut">empty</span>'))+`</div>`});
   h+='</div>';
-  if(G.phase==='lobby'){h+=`<p>${G.winner?`🏆 ${esc(G.names[G.winner])} won. `:''}${isHost?`<button onclick="send({t:'start'})" ${seated().length<2?'disabled':''}>Start game</button>`:'<span class="mut">Waiting for the host to start…</span>'}</p><p class="mut" style="margin:0">Pick any free color. With exactly 2 players, seats are set opposite each other when the game starts.</p></div>`;
+  if(!play){
+    h+=`<div style="text-align:center">${G.winner?`<p>🏆 ${esc(G.names[G.winner])} won</p>`:''}${isHost?`<button onclick="send({t:'start'})" ${seated().length<2?'disabled':''}>Start game</button>`:'<span class="mut">Waiting for the host to start…</span>'}<p class="mut">Pick any free color. With 2 players, seats are placed opposite each other.</p></div></div>`;
     $('app').innerHTML=h;return}
-  const myTurn=G.seats[G.turn]===me&&!G.winner,mv=myTurn&&G.rolled?G.mv:null;
-  const diceVal = G.dice >= 1 && G.dice <= 6 ? G.dice : 1;
-  
-  h+=`</div><div class="card">${board(mv)}<div class="row" style="margin-top:10px;justify-content:space-between"><div class="row">${render3DDice(diceVal, isRolling)}<button onclick="send({t:'roll'})" ${myTurn&&!G.rolled?'':'disabled'}>Roll dice</button></div>
-  <span class="mut">${G.winner?'':myTurn?'Your turn':esc(G.names[G.turn]||'')+'’s turn'}</span></div><p style="margin:8px 0 0">${esc(G.log)}</p>
-  ${G.winner&&isHost?`<button onclick="send({t:'again'})">Play again</button>`:''}</div>`;
+  const myTurn=G.seats[G.turn]===me&&!G.winner,mv=myTurn&&G.rolled?G.mv:null,dv=G.dice>=1&&G.dice<=6?G.dice:1;
+  h+=board(mv)+`<div class="ctrl">${dice(dv,isRolling)}<button onclick="send({t:'roll'})" ${myTurn&&!G.rolled?'':'disabled'}>Roll dice</button></div>
+  <div class="stat">${G.winner?'':myTurn?'Your turn':esc(G.names[G.turn]||'')+'’s turn'}</div><p class="log">${esc(G.log)}</p>
+  ${G.winner&&isHost?`<div style="text-align:center;margin-top:8px"><button onclick="send({t:'again'})">Play again</button></div>`:''}</div>`;
   $('app').innerHTML=h;
 }
 let saved='';try{saved=localStorage.getItem('ludo-room')||''}catch(e){}
