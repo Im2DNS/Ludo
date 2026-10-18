@@ -44,7 +44,7 @@ function lobby(msg){
   <button onclick="create()">Create game</button>
   <input id="cd" placeholder="Friend’s game code" maxlength="5" style="text-transform:uppercase;margin-top:12px">
   <button class="alt" onclick="join()">Join game</button><p class="mut">${msg||''}</p></div>
-  <div class="card mut">Rules: roll a 1 to bring a token out · a 6 or a capture gives another turn · you must capture when you can · a token can only enter its home lane after you have captured at least once (⚔ shows you can) · rolling 1 three times in a row sends your token nearest home back to base · exact roll needed to finish · only start squares are safe.<br><br>If you refresh the page you keep your seat.</div>`;
+  <div class="card mut">Rules: rolling a 1 or 6, capturing a token, or reaching home gives another turn · roll a 1 to bring a token out of base · you must capture when you can · a token can only enter its home lane after you have captured at least once (🔒 locks it until you capture) · rolling 1 three times in a row sends your token nearest home back to base · exact roll needed to finish · only start squares are safe.<br><br>If you refresh the page you keep your seat.</div>`;
 }
 function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter your name first.');return false}myName=v;try{localStorage.setItem('ludo-name',myName)}catch(e){}return true}
 
@@ -184,7 +184,13 @@ function board(mv){
     const q=pos(c,p,i),key=p<0?'b'+c+i:q[0]+','+q[1],n=seen[key]=(seen[key]||0)+1;
     const o=p<0||p>=105?0:(n-1)*.16,can=mv&&c===G.turn&&mv.includes(i),cx=(q[0]+o)*U,cy=(q[1]-o)*U,r=p<0?15:p>=105?8:n>1?12:16;
     if(can)s+=`<circle class="mv" cx="${cx}" cy="${cy}" r="${r+7}" fill="none" stroke="${K}" stroke-width="3" stroke-dasharray="5 4" style="pointer-events:none"/>`;
-    s+=`<circle ${can?`class="mv" onclick="send({t:'move',i:${i}})"`:''} cx="${cx}" cy="${cy}" r="${r}" fill="${COL[c]}" stroke="${K}" stroke-width="3.5"/><circle cx="${cx}" cy="${cy}" r="${Math.max(3,r/3)}" fill="#fff" fill-opacity=".9" style="pointer-events:none"/>`})});
+    s+=`<circle ${can?`class="mv" onclick="send({t:'move',i:${i}})"`:''} cx="${cx}" cy="${cy}" r="${r}" fill="${COL[c]}" stroke="${K}" stroke-width="3.5"/><circle cx="${cx}" cy="${cy}" r="${Math.max(3,r/3)}" fill="#fff" fill-opacity=".9" style="pointer-events:none"/>`;
+    
+    // Add lock symbol on tokens if player hasn't captured yet (locked out of home lane)
+    if(p < 100 && !G.cut[c]) {
+      s+=`<text x="${cx}" y="${cy}" font-size="10" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">🔒</text>`;
+    }
+  })});
   return s+'</svg>';
 }
 function draw(){
