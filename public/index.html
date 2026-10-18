@@ -22,7 +22,7 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation}
 <h1>🎲 Ludo with Friends</h1><div id="app"></div></div>
 <script>
 const C=['R','G','Y','B'],COL={R:'#e24b4a',G:'#2fa84f',Y:'#e8b923',B:'#3b7ddd'},NM={R:'Red',G:'Green',Y:'Yellow',B:'Blue'};
-const ST={R:0,G:13,Y:26,B:39},SAFE=new Set([0,13,26,39,8,21,34,47]),U=40;
+const ST={R:0,G:13,Y:26,B:39},SAFE=new Set([0,13,26,39]),U=40;
 const RING=[],add=(a,c,r,dc,dr,n)=>{for(let i=0;i<n;i++)a.push([c+dc*i,r+dr*i])};
 add(RING,1,6,1,0,5);add(RING,6,5,0,-1,6);add(RING,7,0,1,0,2);add(RING,8,1,0,1,5);add(RING,9,6,1,0,6);add(RING,14,7,0,1,2);add(RING,13,8,-1,0,5);add(RING,8,9,0,1,6);add(RING,7,14,-1,0,2);add(RING,6,13,0,-1,5);add(RING,5,8,-1,0,6);add(RING,0,7,0,-1,2);
 const HOME={R:[],G:[],Y:[],B:[]};add(HOME.R,1,7,1,0,5);add(HOME.G,7,1,0,1,5);add(HOME.Y,13,7,-1,0,5);add(HOME.B,7,13,0,-1,5);
@@ -42,7 +42,7 @@ function lobby(msg){
   <button onclick="create()">Create game</button>
   <input id="cd" placeholder="Friend’s game code" maxlength="5" style="text-transform:uppercase;margin-top:12px">
   <button class="alt" onclick="join()">Join game</button><p class="mut">${msg||''}</p></div>
-  <div class="card mut">Rules: roll a 6 to leave base · a 6 or a capture gives another turn · land on a rival to send it home (not on ★ or start squares) · exact roll needed to reach the centre.<br><br>If you refresh the page you keep your seat.</div>`;
+  <div class="card mut">Rules: roll a 1 to bring a token out · a 6 or a capture gives another turn · you must capture when you can · a token can only enter its home lane after you have captured at least once (⚔ shows you can) · rolling 1 three times in a row sends your token nearest home back to base · exact roll needed to finish · only start squares are safe.<br><br>If you refresh the page you keep your seat.</div>`;
 }
 function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter your name first.');return false}myName=v;try{localStorage.setItem('ludo-name',myName)}catch(e){}return true}
 
@@ -98,13 +98,12 @@ function join(){
 function send(d){if(ws&&ws.readyState===1)ws.send(JSON.stringify(d))}
 const seated=()=>C.filter(c=>G.seats[c]);
 const seatOf=id=>C.find(c=>G.seats[c]===id);
-function movable(c,d){return G.tokens[c].map((p,i)=>(p<0?d===6:p+d<=56)?i:-1).filter(i=>i>=0)}
 
 /* ---------- drawing ---------- */
 function pos(c,p,i){
   if(p<0)return[OR[c][0]+2+(i%2)*2,OR[c][1]+2+(i>>1)*2];
-  if(p<=50){const r=RING[(ST[c]+p)%52];return[r[0]+.5,r[1]+.5]}
-  if(p<=55){const r=HOME[c][p-51];return[r[0]+.5,r[1]+.5]}
+  if(p<=51){const r=RING[(ST[c]+p)%52];return[r[0]+.5,r[1]+.5]}
+  if(p<105){const r=HOME[c][p-100];return[r[0]+.5,r[1]+.5]}
   const f=FIN[c],o=(i-1.5)*.16;return c==='R'||c==='Y'?[f[0],f[1]+o]:[f[0]+o,f[1]];
 }
 function board(mv){
@@ -121,19 +120,19 @@ function board(mv){
   const seen={};
   C.forEach(c=>{if(!G.seats[c])return;G.tokens[c].forEach((p,i)=>{
     const q=pos(c,p,i),key=p<0?'b'+c+i:q[0]+','+q[1],n=seen[key]=(seen[key]||0)+1;
-    const o=p<0||p>55?0:(n-1)*.16,can=mv&&c===G.turn&&mv.includes(i);
-    s+=`<circle class="${can?'mv':''}" ${can?`onclick="send({t:'move',i:${i}})"`:''} cx="${(q[0]+o)*U}" cy="${(q[1]-o)*U}" r="${p<0?15:p>55?8:n>1?11:14}" fill="${COL[c]}" stroke="${can?'#000':'#fff'}" stroke-width="${can?4:3}"/>`})});
+    const o=p<0||p>=105?0:(n-1)*.16,can=mv&&c===G.turn&&mv.includes(i);
+    s+=`<circle class="${can?'mv':''}" ${can?`onclick="send({t:'move',i:${i}})"`:''} cx="${(q[0]+o)*U}" cy="${(q[1]-o)*U}" r="${p<0?15:p>=105?8:n>1?11:14}" fill="${COL[c]}" stroke="${can?'#000':'#fff'}" stroke-width="${can?4:3}"/>`})});
   return s+'</svg>';
 }
 function draw(){
   if(!G)return;const my=seatOf(me);
   let h=`<div class="card"><div class="row"><b>Game ${code}</b><span class="mut">share this code with friends</span><button class="alt" style="margin-left:auto" onclick="toggleSnd()">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div><div class="row" style="margin-top:8px">`;
   C.forEach(c=>{const o=G.seats[c];
-    h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':''):(G.phase==='lobby'&&!my?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">Sit as ${NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
+    h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':'')+(G.cut&&G.cut[c]?' ⚔':''):(G.phase==='lobby'&&!my?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">Sit as ${NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
   h+='</div>';
   if(G.phase==='lobby'){h+=`<p>${G.winner?`🏆 ${esc(G.names[G.winner])} won. `:''}${isHost?`<button onclick="send({t:'start'})" ${seated().length<2?'disabled':''}>Start game</button>`:'<span class="mut">Waiting for the host to start…</span>'}</p></div>`;
     $('app').innerHTML=h;return}
-  const myTurn=G.seats[G.turn]===me&&!G.winner,mv=myTurn&&G.rolled?movable(G.turn,G.dice):null;
+  const myTurn=G.seats[G.turn]===me&&!G.winner,mv=myTurn&&G.rolled?G.mv:null;
   h+=`</div><div class="card">${board(mv)}<div class="row" style="margin-top:10px;justify-content:space-between"><div class="row"><span class="dice" style="color:${G.last?COL[G.last]:'inherit'}">${PIPS[G.dice]||'🎲'}</span><button onclick="send({t:'roll'})" ${myTurn&&!G.rolled?'':'disabled'}>Roll dice</button></div>
   <span class="mut">${G.winner?'':myTurn?'Your turn':esc(G.names[G.turn]||'')+'’s turn'}</span></div><p style="margin:8px 0 0">${esc(G.log)}</p>
   ${G.winner&&isHost?`<button onclick="send({t:'again'})">Play again</button>`:''}</div>`;
