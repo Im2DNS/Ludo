@@ -83,8 +83,26 @@ function act(G, d, from) {
     G.tokens[c][i] = nv; vs.forEach(([o, j]) => G.tokens[o][j] = -1);
     if (vs.length) G.cut[c] = true;
     G.rolled = false; G.mv = [];
-    if (G.tokens[c].every(q => q === 105)) { G.winner = c; G.log = `🏆 ${G.names[c]} wins!`; }
-    else { G.log = `${G.names[c]} moved` + (vs.length ? ' and captured a token — can now enter home!' : ''); if (v !== 6 && !vs.length) nextTurn(G); else G.log += ' Roll again.'; }
+
+    const reachedHome = (nv === 105);
+    const bonusTurn = (v === 1 || v === 6 || vs.length > 0 || reachedHome);
+
+    if (G.tokens[c].every(q => q === 105)) { 
+      G.winner = c; 
+      G.log = `🏆 ${G.names[c]} wins!`; 
+    } else { 
+      let actionMsg = `${G.names[c]} moved`;
+      if (vs.length) actionMsg = `${G.names[c]} captured a token (home lane unlocked!)`;
+      else if (reachedHome) actionMsg = `${G.names[c]} reached home!`;
+
+      G.log = actionMsg;
+
+      if (bonusTurn) {
+        G.log += ' Roll again!';
+      } else {
+        nextTurn(G);
+      }
+    }
   } else return;
 }
 
@@ -154,4 +172,4 @@ setInterval(() => {
 }, 30000);
 
 server.listen(process.env.PORT || 3000, () => console.log('Ludo server running'));
-    
+          
