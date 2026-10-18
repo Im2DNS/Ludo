@@ -18,8 +18,73 @@ button.alt{background:var(--line);color:var(--fg)}button:disabled{opacity:.4;cur
 .seat{flex:1 1 45%;border:2px solid;border-radius:10px;padding:6px 8px;font-size:14px;transition:all 0.3s ease}
 .seat.on{background:rgba(59,125,221,0.15);box-shadow:0 0 12px rgba(59,125,221,0.3)}
 svg{width:100%;height:auto;display:block;touch-action:manipulation}
-.dice{font-size:44px;line-height:1}.mut{color:var(--mut);font-size:14px}
+.mut{color:var(--mut);font-size:14px}
 @keyframes p{50%{opacity:.35}}.mv{animation:p .8s infinite;cursor:pointer}
+
+/* --- 3D Realistic Dice Styles --- */
+.dice-scene {
+  width: 56px;
+  height: 56px;
+  perspective: 600px;
+  display: inline-block;
+  margin: 0 8px;
+  vertical-align: middle;
+}
+.dice-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(0deg) rotateY(0deg);
+  transition: transform 0.8s cubic-bezier(0.15, 0.85, 0.35, 1.2);
+}
+@keyframes shake {
+  0% { transform: rotateX(0deg) rotateY(0deg) translate(0,0); }
+  20% { transform: rotateX(180deg) rotateY(90deg) translate(-4px, 4px); }
+  40% { transform: rotateX(360deg) rotateY(180deg) translate(4px, -2px); }
+  60% { transform: rotateX(540deg) rotateY(270deg) translate(-2px, -4px); }
+  80% { transform: rotateX(720deg) rotateY(360deg) translate(3px, 3px); }
+  100% { transform: rotateX(720deg) rotateY(360deg) translate(0,0); }
+}
+.dice-cube.rolling {
+  animation: shake 0.7s ease-in-out infinite;
+}
+.dice-face {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  background: #fff;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 6px;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.1);
+}
+.dot {
+  background: #222;
+  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  align-self: center;
+  justify-self: center;
+}
+/* Face orientations in 3D space */
+.face-1 { transform: rotateY(0deg) translateZ(28px); }
+.face-6 { transform: rotateY(180deg) translateZ(28px); }
+.face-2 { transform: rotateY(-90deg) translateZ(28px); }
+.face-5 { transform: rotateY(90deg) translateZ(28px); }
+.face-3 { transform: rotateX(90deg) translateZ(28px); }
+.face-4 { transform: rotateX(-90deg) translateZ(28px); }
+
+/* Dot placement helper classes */
+.d-center { grid-area: 2 / 2 / 3 / 3; }
+.d-tl { grid-area: 1 / 1 / 2 / 2; }
+.d-tr { grid-area: 1 / 3 / 2 / 4; }
+.d-bl { grid-area: 3 / 1 / 4 / 2; }
+.d-br { grid-area: 3 / 3 / 4 / 4; }
+.d-ml { grid-area: 2 / 1 / 3 / 2; }
+.d-mr { grid-area: 2 / 3 / 3 / 4; }
 </style></head><body><div class="wrap">
 <h1>🎲 Ludo with Friends</h1><div id="app"></div></div>
 <script>
@@ -29,8 +94,8 @@ const RING=[],add=(a,c,r,dc,dr,n)=>{for(let i=0;i<n;i++)a.push([c+dc*i,r+dr*i])}
 add(RING,1,6,1,0,5);add(RING,6,5,0,-1,6);add(RING,7,0,1,0,2);add(RING,8,1,0,1,5);add(RING,9,6,1,0,6);add(RING,14,7,0,1,2);add(RING,13,8,-1,0,5);add(RING,8,9,0,1,6);add(RING,7,14,-1,0,2);add(RING,6,13,0,-1,5);add(RING,5,8,-1,0,6);add(RING,0,7,0,-1,2);
 const HOME={R:[],G:[],Y:[],B:[]};add(HOME.R,1,7,1,0,5);add(HOME.G,7,1,0,1,5);add(HOME.Y,13,7,-1,0,5);add(HOME.B,7,13,0,-1,5);
 const OR={R:[0,0],G:[9,0],Y:[9,9],B:[0,9]},FIN={R:[6.6,7.5],G:[7.5,6.6],Y:[8.4,7.5],B:[7.5,8.4]};
-const PIPS=['','⚀','⚁','⚂','⚃','⚄','⚅'];
-let G=null,code='',me='',myName='',isHost=false,ws=null,tm=null;
+
+let G=null,code='',me='',myName='',isHost=false,ws=null,tm=null,isRolling=false;
 const $=s=>document.getElementById(s);
 try{myName=localStorage.getItem('ludo-name')||''}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -63,7 +128,17 @@ function connect(first){
   ws.onmessage=e=>{
     clearTimeout(tm);const d=JSON.parse(e.data);
     if(d.err){G=null;keep('');ws.onclose=null;ws.close();return lobby(d.err)}
-    if(d.s){G=d.s;code=d.code||code;isHost=G.host===me;keep(code);draw()}
+    if(d.s){
+      const prevDice = G ? G.dice : 0;
+      G=d.s; code=d.code||code; isHost=G.host===me; keep(code);
+      if(G.dice && G.dice !== prevDice) {
+        isRolling = true;
+        draw();
+        setTimeout(() => { isRolling = false; draw(); }, 700);
+      } else {
+        draw();
+      }
+    }
   };
   ws.onclose=()=>{
     if(G){wait('Connection lost. Reconnecting…');setTimeout(()=>connect({t:'join',code,n:myName,id:me}),2000)}
@@ -88,6 +163,34 @@ function copyCode(){
   navigator.clipboard.writeText(code).then(()=>{
     alert('Game code ' + code + ' copied to clipboard!');
   }).catch(()=>{});
+}
+
+/* ---------- 3D Dice HTML Generator ---------- */
+function render3DDice(val, rolling){
+  // Rotation angles for each face to point towards the camera
+  const rotations = {
+    1: 'rotateX(0deg) rotateY(0deg)',
+    2: 'rotateY(90deg)',
+    3: 'rotateX(-90deg)',
+    4: 'rotateX(90deg)',
+    5: 'rotateY(-90deg)',
+    6: 'rotateY(180deg)'
+  };
+  const rot = rotations[val] || 'rotateX(0deg) rotateY(0deg)';
+  const cubeClass = rolling ? 'dice-cube rolling' : 'dice-cube';
+
+  return `
+    <div class="dice-scene">
+      <div class="${cubeClass}" style="transform: ${rot}">
+        <div class="dice-face face-1"><div class="dot d-center"></div></div>
+        <div class="dice-face face-2"><div class="dot d-tl"></div><div class="dot d-br"></div></div>
+        <div class="dice-face face-3"><div class="dot d-tl"></div><div class="dot d-center"></div><div class="dot d-br"></div></div>
+        <div class="dice-face face-4"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+        <div class="dice-face face-5"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-center"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+        <div class="dice-face face-6"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-ml"></div><div class="dot d-mr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+      </div>
+    </div>
+  `;
 }
 
 /* ---------- drawing ---------- */
@@ -117,7 +220,6 @@ function board(mv){
     if(can)s+=`<circle class="mv" cx="${cx}" cy="${cy}" r="${r+7}" fill="none" stroke="${K}" stroke-width="3" stroke-dasharray="5 4" style="pointer-events:none"/>`;
     s+=`<circle ${can?`class="mv" onclick="send({t:'move',i:${i}})"`:''} cx="${cx}" cy="${cy}" r="${r}" fill="${COL[c]}" stroke="${K}" stroke-width="3.5"/><circle cx="${cx}" cy="${cy}" r="${Math.max(3,r/3)}" fill="#fff" fill-opacity=".9" style="pointer-events:none"/>`;
     
-    // Add lock symbol badge on tokens if player hasn't captured yet
     if(p < 100 && !G.cut[c]) {
       s+=`<circle cx="${cx}" cy="${cy}" r="9" fill="#fff" stroke="#333" stroke-width="1" style="pointer-events:none"/>`;
       s+=`<text x="${cx}" y="${cy}" font-size="10" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">🔒</text>`;
@@ -134,7 +236,9 @@ function draw(){
   if(G.phase==='lobby'){h+=`<p>${G.winner?`🏆 ${esc(G.names[G.winner])} won. `:''}${isHost?`<button onclick="send({t:'start'})" ${seated().length<2?'disabled':''}>Start game</button>`:'<span class="mut">Waiting for the host to start…</span>'}</p><p class="mut" style="margin:0">Pick any free color. With exactly 2 players, seats are set opposite each other when the game starts.</p></div>`;
     $('app').innerHTML=h;return}
   const myTurn=G.seats[G.turn]===me&&!G.winner,mv=myTurn&&G.rolled?G.mv:null;
-  h+=`</div><div class="card">${board(mv)}<div class="row" style="margin-top:10px;justify-content:space-between"><div class="row"><span class="dice" style="color:${G.last?COL[G.last]:'inherit'}">${PIPS[G.dice]||'🎲'}</span><button onclick="send({t:'roll'})" ${myTurn&&!G.rolled?'':'disabled'}>Roll dice</button></div>
+  const diceVal = G.dice >= 1 && G.dice <= 6 ? G.dice : 1;
+  
+  h+=`</div><div class="card">${board(mv)}<div class="row" style="margin-top:10px;justify-content:space-between"><div class="row">${render3DDice(diceVal, isRolling)}<button onclick="send({t:'roll'})" ${myTurn&&!G.rolled?'':'disabled'}>Roll dice</button></div>
   <span class="mut">${G.winner?'':myTurn?'Your turn':esc(G.names[G.turn]||'')+'’s turn'}</span></div><p style="margin:8px 0 0">${esc(G.log)}</p>
   ${G.winner&&isHost?`<button onclick="send({t:'again'})">Play again</button>`:''}</div>`;
   $('app').innerHTML=h;
