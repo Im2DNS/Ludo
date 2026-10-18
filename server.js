@@ -106,7 +106,7 @@ function broadcast(code) {
   r.clients.forEach(w => { if (w.readyState === 1) w.send(msg); });
 }
 const err = (w, e) => w.send(JSON.stringify({ err: e }));
-function leave(w) { const r = w.code && rooms.get(w.code); if (r) { r.clients.delete(w); r.empty = r.clients.size ? 0 : Date.now(); } }
+function leave(w) { const r = w.code && rooms.get(w.code); if (r) { r.clients.delete(w); } }
 
 wss.on('connection', w => {
   w.alive = true; w.on('pong', () => w.alive = true);
@@ -143,8 +143,15 @@ wss.on('connection', w => {
 
 setInterval(() => {
   wss.clients.forEach(w => { if (!w.alive) return w.terminate(); w.alive = false; w.ping(); });
-  rooms.forEach((r, code) => { if (r.empty && Date.now() - r.empty > 3600000) rooms.delete(code); });
+  rooms.forEach((r, code) => {
+    if (r.clients.size === 0) {
+      if (!r.empty) r.empty = Date.now();
+      else if (Date.now() - r.empty > 1800000) rooms.delete(code); // Clean up after 30 mins of zero active connections
+    } else {
+      r.empty = 0;
+    }
+  });
 }, 30000);
 
 server.listen(process.env.PORT || 3000, () => console.log('Ludo server running'));
-                 
+    
