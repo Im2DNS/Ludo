@@ -47,10 +47,16 @@ function nextTurn(G) { const s = seated(G); G.turn = s[(s.indexOf(G.turn) + 1) %
 
 function act(G, d, from) {
   if (d.t === 'sit') {
-    if (G.phase !== 'lobby' || seatOf(G, from) || !C.includes(d.c) || G.seats[d.c]) return;
+    if (G.phase !== 'lobby' || !C.includes(d.c) || G.seats[d.c]) return;
+    const old = seatOf(G, from); if (old) { G.seats[old] = null; delete G.names[old]; }   // allows moving to another color
     G.seats[d.c] = from; G.names[d.c] = clean(d.n);
   } else if (d.t === 'start') {
     if (from !== G.host || G.phase !== 'lobby' || seated(G).length < 2) return;
+    const s2 = seated(G);
+    if (s2.length === 2) {                                   // two players sit opposite each other
+      const OP = { R: 'Y', Y: 'R', G: 'B', B: 'G' }, [a, b] = s2;
+      if (OP[a] !== b) { const nb = OP[a]; G.seats[nb] = G.seats[b]; G.names[nb] = G.names[b]; G.seats[b] = null; delete G.names[b]; }
+    }
     G.phase = 'play'; G.turn = seated(G)[0]; G.log = NM[G.turn] + ' starts — roll!';
   } else if (d.t === 'again') {
     if (from !== G.host || !G.winner) return;
@@ -82,6 +88,18 @@ function act(G, d, from) {
   } else return;
 }
 
+function removePlayer(G, id) {
+  const c = seatOf(G, id); if (!c) return;
+  const nm = G.names[c];
+  if (G.phase === 'play' && !G.winner && G.turn === c) { G.rolled = false; G.mv = []; nextTurn(G); }
+  G.seats[c] = null; delete G.names[c]; G.tokens[c] = [-1, -1, -1, -1]; G.cut[c] = false; G.ones[c] = 0;
+  const s = seated(G);
+  if (G.host === id && s.length) G.host = G.seats[s[0]];
+  if (G.phase === 'play' && !G.winner) {
+    if (s.length === 1) { G.winner = s[0]; G.rolled = false; G.mv = []; G.log = `🏆 ${G.names[s[0]]} wins — everyone else left!`; }
+    else G.log = `${nm} left the game`;
+  }
+}
 function broadcast(code) {
   const r = rooms.get(code); if (!r) return;
   const msg = JSON.stringify({ s: r.G, code });
@@ -111,6 +129,11 @@ wss.on('connection', w => {
       const r = rooms.get(w.code); r.clients.add(w); r.empty = 0;
       const c = seatOf(r.G, id); if (c) r.G.names[c] = clean(d.n);
       return broadcast(w.code);
+    }
+    if (d.t === 'leave') {
+      const r0 = w.code && rooms.get(w.code), code = w.code;
+      if (r0 && w.id) { removePlayer(r0.G, w.id); leave(w); w.code = null; broadcast(code); }
+      return;
     }
     const r = w.code && rooms.get(w.code); if (!r || !w.id) return;
     act(r.G, d, w.id); broadcast(w.code);
