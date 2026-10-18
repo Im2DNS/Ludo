@@ -7,18 +7,19 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, maxPayload: 2048 });
 
 const C = ['R', 'G', 'Y', 'B'], NM = { R: 'Red', G: 'Green', Y: 'Yellow', B: 'Blue' };
-const ST = { R: 0, G: 13, Y: 26, B: 39 }, SAFE = new Set([0, 13, 26, 39]);
+const ST = { R: 0, G: 13, Y: 26, B: 39 }, SAFE = new Set([0, 13, 26, 39]); // start squares only
 const rooms = new Map();
 
 const seated = G => C.filter(c => G.seats[c]);
 const seatOf = (G, id) => C.find(c => G.seats[c] === id);
 
+// Token value v: -1 base | 0..51 ring steps from own start | 100..104 home lane | 105 finished
 function dest(G, c, v, d) {
-  if (v === -1) return d === 1 ? 0 : null;
+  if (v === -1) return d === 1 ? 0 : null;                 // leave base only on a 1
   if (v >= 100) { const L = v - 100 + d; return L <= 5 ? 100 + L : null; }
   const t = v + d;
-  if (G.cut[c]) { if (t <= 50) return t; const L = t - 51; return L <= 5 ? 100 + L : null; }
-  return t >= 52 ? t - 52 : t;
+  if (G.cut[c]) { if (t <= 50) return t; const L = t - 51; return L <= 5 ? 100 + L : null; } // lane only after a capture
+  return t >= 52 ? t - 52 : t;                             // no capture yet: keep circling
 }
 function victims(G, c, nv) {
   const out = [];
@@ -34,7 +35,7 @@ function movable(G, c, d) {
     const nv = dest(G, c, v, d); if (nv === null) return;
     all.push(i); if (victims(G, c, nv).length) cap.push(i);
   });
-  return cap.length ? cap : all;
+  return cap.length ? cap : all;                           // must capture when possible
 }
 const clean = s => String(s || 'Player').replace(/[<>&"]/g, '').trim().slice(0, 14) || 'Player';
 
@@ -164,7 +165,7 @@ setInterval(() => {
   rooms.forEach((r, code) => {
     if (r.clients.size === 0) {
       if (!r.empty) r.empty = Date.now();
-      else if (Date.now() - r.empty > 1800000) rooms.delete(code);
+      else if (Date.now() - r.empty > 1800000) rooms.delete(code); // Clean up after 30 mins of zero active connections
     } else {
       r.empty = 0;
     }
@@ -172,4 +173,4 @@ setInterval(() => {
 }, 30000);
 
 server.listen(process.env.PORT || 3000, () => console.log('Ludo server running'));
-    
+  
