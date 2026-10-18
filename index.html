@@ -38,17 +38,19 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 function lobby(msg){
   G=null;
   $('app').innerHTML=`<div class="card"><b>Play with friends</b><p class="mut">Create a game, then share the 5-letter code. Up to 4 players, no ads, no login.</p>
+  <label class="mut" for="nm">1. Enter your name</label>
   <input id="nm" placeholder="Your name" maxlength="14" value="${esc(myName)}">
+  <div class="mut" style="margin-top:6px">2. Start a game or join a friend’s</div>
   <button onclick="create()">Create game</button>
   <input id="cd" placeholder="Friend’s game code" maxlength="5" style="text-transform:uppercase;margin-top:12px">
   <button class="alt" onclick="join()">Join game</button><p class="mut">${msg||''}</p></div>
   <div class="card mut">Rules: roll a 6 to leave base · a 6 or a capture gives another turn · land on a rival to send it home (not on ★ or start squares) · exact roll needed to reach the centre.<br><br>The host must keep this page open during the game.</div>`;
 }
-function nameOk(){myName=($('nm').value||'').trim()||'Player';try{localStorage.setItem('ludo-name',myName)}catch(e){}}
+function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter your name first.');return false}myName=v;try{localStorage.setItem('ludo-name',myName)}catch(e){}return true}
 
 /* ---------- networking (host is the referee) ---------- */
 function create(){
-  nameOk();
+  if(!nameOk())return;
   code=Array.from({length:5},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
   isHost=true;me='host';
   const t={};C.forEach(c=>t[c]=[-1,-1,-1,-1]);
@@ -65,7 +67,7 @@ function create(){
   peer.on('error',e=>{if(e.type==='unavailable-id')create();else lobby('Connection problem: '+e.type)});
 }
 function join(){
-  nameOk();code=($('cd').value||'').trim().toUpperCase();if(code.length<3)return;
+  if(!nameOk())return;code=($('cd').value||'').trim().toUpperCase();if(code.length<3)return;
   isHost=false;$('app').innerHTML='<div class="card">Connecting…</div>';
   if(peer)peer.destroy();
   peer=new Peer(OPTS);
