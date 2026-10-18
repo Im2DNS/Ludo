@@ -1,30 +1,31 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>Ludo Classic</title>
+<html lang="en"><head><meta charset="utf-8"><title>Ludo with Friends</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-:root{--bg:#e4d5b7;--fg:#222;--card:#fdfbf7;--mut:#555;--line:#333}
+:root{--bg:#d7b899;--fg:#222;--card:#f4e4bc;--mut:#555;--line:#b08d65}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:8px}
-.wrap{max-width:520px;margin:0 auto}
-h1{font-size:20px;margin:2px 0 8px;text-align:center}
-.card{background:var(--card);border:2px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
-input{font:inherit;padding:8px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--fg);width:100%;margin:4px 0 6px}
-button{font:inherit;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:#4a7c59;color:#fff;cursor:pointer;margin:2px;font-weight:bold;transition:filter 0.1s}
-button:hover:not(:disabled){filter:brightness(1.1)}
-button.alt{background:#d90429}button:disabled{opacity:.4;cursor:default}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:12px}
+.wrap{max-width:560px;margin:0 auto}
+h1{font-size:22px;margin:4px 0 12px;text-align:center;color:#332211;text-shadow:0 1px 0 rgba(255,255,255,0.4)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--fg);width:100%;margin:4px 0 8px}
+button{font:inherit;padding:10px 16px;border-radius:10px;border:0;background:#2b7a4b;color:#fff;cursor:pointer;margin:2px;font-weight:700;transition:transform 0.1s ease, filter 0.2s ease}
+button:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+button:active:not(:disabled){transform:translateY(0)}
+button.alt{background:#8c6d53;color:#fff}button:disabled{opacity:.4;cursor:default}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.seat{flex:1 1 45%;border:2px solid var(--line);border-radius:6px;padding:4px 6px;font-size:13px;background:#fff;font-weight:bold}
-.seat.on{background:rgba(74,124,89,0.2)}
-svg{width:100%;height:auto;display:block;touch-action:manipulation;background:#f5ebd6;border:2px solid #222}
-.mut{color:var(--mut);font-size:13px}
+.seat{flex:1 1 45%;border:2px solid;border-radius:10px;padding:6px 8px;font-size:14px;background:rgba(255,255,255,0.6);transition:all 0.3s ease}
+.seat.on{background:rgba(43,122,75,0.25);box-shadow:0 0 10px rgba(43,122,75,0.4)}
+svg{width:100%;height:auto;display:block;touch-action:manipulation;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+.mut{color:var(--mut);font-size:14px}
 
-/* --- 3D Realistic Dice Styles matching Source --- */
+/* --- 3D Realistic Dice Styles --- */
 .dice-scene {
-  width: 50px;
-  height: 50px;
-  perspective: 500px;
+  width: 56px;
+  height: 56px;
+  perspective: 600px;
   display: inline-block;
-  margin: 0 6px;
+  margin: 0 8px;
   vertical-align: middle;
 }
 .dice-cube {
@@ -32,45 +33,46 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;background:#f
   height: 100%;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.1, 0.8, 0.3, 1.1);
+  transform: rotateX(0deg) rotateY(0deg);
+  transition: transform 0.8s cubic-bezier(0.15, 0.85, 0.35, 1.2);
 }
-@keyframes rollShake {
+@keyframes shake {
   0% { transform: rotateX(0deg) rotateY(0deg) translate(0,0); }
-  25% { transform: rotateX(270deg) rotateY(180deg) translate(-3px, 3px); }
-  50% { transform: rotateX(540deg) rotateY(360deg) translate(3px, -3px); }
-  75% { transform: rotateX(810deg) rotateY(540deg) translate(-2px, 2px); }
-  100% { transform: rotateX(1080deg) rotateY(720deg) translate(0,0); }
+  20% { transform: rotateX(180deg) rotateY(90deg) translate(-4px, 4px); }
+  40% { transform: rotateX(360deg) rotateY(180deg) translate(4px, -2px); }
+  60% { transform: rotateX(540deg) rotateY(270deg) translate(-2px, -4px); }
+  80% { transform: rotateX(720deg) rotateY(360deg) translate(3px, 3px); }
+  100% { transform: rotateX(720deg) rotateY(360deg) translate(0,0); }
 }
 .dice-cube.rolling {
-  animation: rollShake 0.5s ease-in-out infinite;
+  animation: shake 0.7s ease-in-out infinite;
 }
 .dice-face {
   position: absolute;
-  width: 50px;
-  height: 50px;
-  background: #2b9348;
-  border: 2px solid #000;
-  border-radius: 8px;
+  width: 56px;
+  height: 56px;
+  background: #fff;
+  border: 2px solid #ccc;
+  border-radius: 10px;
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  padding: 5px;
-  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4);
+  padding: 6px;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.1);
 }
 .dot {
-  background: #fff;
+  background: #222;
   border-radius: 50%;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   align-self: center;
   justify-self: center;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
 }
-.face-1 { transform: rotateY(0deg) translateZ(25px); background: #d90429; }
-.face-6 { transform: rotateY(180deg) translateZ(25px); background: #1d3557; }
-.face-2 { transform: rotateY(-90deg) translateZ(25px); background: #ffb703; color:#000; }
-.face-5 { transform: rotateY(90deg) translateZ(25px); background: #2b9348; }
-.face-3 { transform: rotateX(90deg) translateZ(25px); background: #3a86ff; }
-.face-4 { transform: rotateX(-90deg) translateZ(25px); background: #7209b7; }
+.face-1 { transform: rotateY(0deg) translateZ(28px); }
+.face-6 { transform: rotateY(180deg) translateZ(28px); }
+.face-2 { transform: rotateY(-90deg) translateZ(28px); }
+.face-5 { transform: rotateY(90deg) translateZ(28px); }
+.face-3 { transform: rotateX(90deg) translateZ(28px); }
+.face-4 { transform: rotateX(-90deg) translateZ(28px); }
 
 .d-center { grid-area: 2 / 2 / 3 / 3; }
 .d-tl { grid-area: 1 / 1 / 2 / 2; }
@@ -79,75 +81,76 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;background:#f
 .d-br { grid-area: 3 / 3 / 4 / 4; }
 .d-ml { grid-area: 2 / 1 / 3 / 2; }
 .d-mr { grid-area: 2 / 3 / 3 / 4; }
+@keyframes p{50%{opacity:.35}}.mv{animation:p .8s infinite;cursor:pointer}
 </style></head><body><div class="wrap">
-<h1>🎲 Ludo Classic</h1><div id="app"></div></div>
+<h1>🎲 Ludo with Friends</h1><div id="app"></div></div>
 <script>
-const C=['R','G','Y','B'],COL={R:'#d90429',G:'#2b9348',Y:'#ffb703',B:'#3a86ff'},NM={R:'Red',G:'Green',Y:'Yellow',B:'Blue'};
+const C=['R','G','Y','B'],COL={R:'#d62828',G:'#13a04a',Y:'#e09f1f',B:'#1f5fd6'},NM={R:'Red',G:'Green',Y:'Yellow',B:'Blue'};
 const ST={R:0,G:13,Y:26,B:39},SAFE=new Set([0,13,26,39]),U=40;
 const RING=[],add=(a,c,r,dc,dr,n)=>{for(let i=0;i<n;i++)a.push([c+dc*i,r+dr*i])};
 add(RING,1,6,1,0,5);add(RING,6,5,0,-1,6);add(RING,7,0,1,0,2);add(RING,8,1,0,1,5);add(RING,9,6,1,0,6);add(RING,14,7,0,1,2);add(RING,13,8,-1,0,5);add(RING,8,9,0,1,6);add(RING,7,14,-1,0,2);add(RING,6,13,0,-1,5);add(RING,5,8,-1,0,6);add(RING,0,7,0,-1,2);
 const HOME={R:[],G:[],Y:[],B:[]};add(HOME.R,1,7,1,0,5);add(HOME.G,7,1,0,1,5);add(HOME.Y,13,7,-1,0,5);add(HOME.B,7,13,0,-1,5);
 const OR={R:[0,0],G:[9,0],Y:[9,9],B:[0,9]},FIN={R:[6.6,7.5],G:[7.5,6.6],Y:[8.4,7.5],B:[7.5,8.4]};
 
-let G=null,code='',me='',myName='',isHost=false,ws=null,tm=null,isRolling=false;
+let G=null,code='',me='',myName='',isHost=false,ws=null,tm=null,isRolling=false,snd=true;
 const $=s=>document.getElementById(s);
 try{myName=localStorage.getItem('ludo-name')||''}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+/* ---------- Sound System (Web Audio API Synthesizer) ---------- */
 let AC=null;
-function getAudioContext(){
-  if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
-  if(AC && AC.state==='suspended') AC.resume();
-  return AC;
-}
-['click','touchstart'].forEach(ev=>document.addEventListener(ev, getAudioContext, {passive:true}));
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==='suspended')AC.resume();return AC}
+['click','touchstart'].forEach(ev=>document.addEventListener(ev,ac,{passive:true}));
 
-function playDiceRollSound(){
-  const ctx = getAudioContext();
-  if(!ctx) return;
-  for(let i=0; i<6; i++){
-    setTimeout(() => {
-      if(ctx.state==='suspended') return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(150 + Math.random()*300, ctx.currentTime);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.06);
-    }, i * 70);
-  }
+function nz(a,len){const b=a.createBuffer(1,len,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<len;i++)x[i]=Math.random()*2-1;return b}
+function knock(t,v,f,damp){
+  const a=ac(),o=a?a.destination:null;if(!a||!snd||!o)return;const n=a.currentTime+t;
+  const s=a.createBufferSource(),bp=a.createBiquadFilter(),lp=a.createBiquadFilter(),g=a.createGain();
+  s.buffer=nz(a,Math.floor(a.sampleRate*.03));bp.type='bandpass';bp.frequency.value=f*1.8;bp.Q.value=.7;
+  lp.type='lowpass';lp.frequency.value=2500+f*(1-damp)*4;
+  g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+.03);
+  s.connect(bp);bp.connect(lp);lp.connect(g);g.connect(o);s.start(n);
+  [[1,1],[2.3,.45],[4.1,.18]].forEach(([r,m])=>{
+    const os=a.createOscillator(),gg=a.createGain(),d=(.03+.09*(1-damp))/Math.sqrt(r);
+    os.frequency.setValueAtTime(f*r*1.05,n);os.frequency.exponentialRampToValueAtTime(f*r,n+.025);
+    gg.gain.setValueAtTime(v*m*.85,n);gg.gain.exponentialRampToValueAtTime(.001,n+d);
+    os.connect(gg);gg.connect(o);os.start(n);os.stop(n+d+.02)});
 }
-
-function playMoveSound(){
-  const ctx = getAudioContext();
-  if(!ctx) return;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(440, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime+0.08);
-  gain.gain.setValueAtTime(0.25, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.08);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start();
-  osc.stop(ctx.currentTime+0.08);
+function rollSnd(){
+  const RN=(a,b)=>a+Math.random()*(b-a);
+  for(let i=0;i<12;i++)knock(RN(0,.25),RN(.05,.1),RN(380,600),.85);
+  let t=.25,gap=.14,v=.6;
+  for(let i=0;i<5;i++){knock(t,v,RN(420,620),.85);t+=gap;gap*=.72;v*=.7}
 }
+function moveSnd(){
+  const a=ac();if(!a||!snd)return;const n=a.currentTime,s=a.createBufferSource(),hp=a.createBiquadFilter(),g=a.createGain();
+  s.buffer=nz(a,Math.floor(a.sampleRate*.09));hp.type='highpass';hp.frequency.value=3000;
+  g.gain.setValueAtTime(.001,n);g.gain.linearRampToValueAtTime(.05,n+.03);g.gain.exponentialRampToValueAtTime(.001,n+.09);
+  s.connect(hp);hp.connect(g);g.connect(a.destination);s.start(n);
+  knock(0.05, 0.55, 820, 0.8);
+  knock(0.12, 0.28, 640, 0.8);
+}
+function sfx(p,g){
+  if(!p||p.log===g.log)return;
+  if(/ rolled /.test(g.log))rollSnd();
+  else if(JSON.stringify(p.tokens)!==JSON.stringify(g.tokens)){moveSnd();}
+}
+function toggleSnd(){snd=!snd;draw()}
 
 function lobby(msg){
   G=null;
-  $('app').innerHTML=`<div class="card"><b>Ludo Classic Room</b><p class="mut">Enter your name and create or join a game code.</p>
-  <input id="nm" placeholder="Your name (e.g. Human 1)" maxlength="14" value="${esc(myName)}">
-  <button onclick="create()">Create Game</button>
-  <input id="cd" placeholder="Game Code" maxlength="5" style="text-transform:uppercase;margin-top:8px">
-  <button class="alt" onclick="join()">Join Game</button><p class="mut">${msg||''}</p></div>`;
+  $('app').innerHTML=`<div class="card"><b>Play with friends</b><p class="mut">Create a game, then share the 5-letter code. Up to 4 players, wood board theme with authentic sound effects.</p>
+  <label class="mut" for="nm">1. Enter your name</label>
+  <input id="nm" placeholder="Your name" maxlength="14" value="${esc(myName)}">
+  <div class="mut" style="margin-top:6px">2. Start a game or join a friend’s</div>
+  <button onclick="create()">Create game</button>
+  <input id="cd" placeholder="Friend’s game code" maxlength="5" style="text-transform:uppercase;margin-top:12px">
+  <button class="alt" onclick="join()">Join game</button><p class="mut">${msg||''}</p></div>
+  <div class="card mut">Rules: rolling a 1 or 6, capturing a token, or reaching home gives another turn · roll a 1 to bring a token out of base · you must capture when you can · home lane is locked until you make your first capture (🔒) · rolling 1 three times sends nearest home back to base · exact roll to finish.<br><br><button class="alt" onclick="toggleSnd()" style="margin-top:8px">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div>`;
 }
-function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter your name.');return false}myName=v;try{localStorage.setItem('ludo-name',myName)}catch(e){}return true}
+function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter your name first.');return false}myName=v;try{localStorage.setItem('ludo-name',myName)}catch(e){}return true}
 
+/* ---------- networking ---------- */
 try{me=localStorage.getItem('ludo-id')||''}catch(e){}
 if(!me){me='p'+Math.random().toString(36).slice(2,12);try{localStorage.setItem('ludo-id',me)}catch(e){}}
 
@@ -157,85 +160,110 @@ function connect(first){
   clearTimeout(tm);
   if(ws){ws.onclose=null;try{ws.close()}catch(e){}}
   ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
-  tm=setTimeout(()=>{if(!G)lobby('Could not connect to server.')},10000);
+  tm=setTimeout(()=>{if(!G)lobby('Could not reach the server. It may be waking up, so wait a minute and try again.')},60000);
   ws.onopen=()=>ws.send(JSON.stringify(first));
   ws.onmessage=e=>{
     clearTimeout(tm);const d=JSON.parse(e.data);
     if(d.err){G=null;keep('');ws.onclose=null;ws.close();return lobby(d.err)}
     if(d.s){
       const prevDice = G ? G.dice : 0;
+      const pv = G;
       G=d.s; code=d.code||code; isHost=G.host===me; keep(code);
+      sfx(pv, G);
       if(G.dice && G.dice !== prevDice) {
         isRolling = true;
-        playDiceRollSound();
         draw();
-        setTimeout(() => { isRolling = false; draw(); }, 500);
+        setTimeout(() => { isRolling = false; draw(); }, 700);
       } else {
         draw();
       }
     }
   };
-  ws.onclose=()=>{if(G){wait('Reconnecting…');setTimeout(()=>connect({t:'join',code,n:myName,id:me}),2000)}else{lobby('Disconnected.')}};
+  ws.onclose=()=>{
+    if(G){wait('Connection lost. Reconnecting…');setTimeout(()=>connect({t:'join',code,n:myName,id:me}),2000)}
+    else{clearTimeout(tm);lobby('Could not connect to the server.')}
+  };
 }
-function create(){if(!nameOk())return;connect({t:'create',n:myName,id:me})}
+function create(){if(!nameOk())return;wait('Connecting…');connect({t:'create',n:myName,id:me})}
 function join(){
-  if(!nameOk())return;
-  const cdInput = $('cd');
-  if(!cdInput) return;
-  code = (cdInput.value || '').trim().toUpperCase();
-  if(code.length < 3) {
-    lobby('Please enter a valid 5-letter game code.');
-    return;
-  }
-  wait('Connecting to game…');
-  connect({t:'join', code: code, n: myName, id: me});
+  if(!nameOk())return;code=($('cd').value||'').trim().toUpperCase();if(code.length<3)return;
+  wait('Connecting…');connect({t:'join',code,n:myName,id:me});
 }
-function leaveRoom(){if(!confirm('Leave game?'))return;send({t:'leave'});keep('');G=null;lobby()}
+function leaveRoom(){
+  if(!confirm('Leave this game?'))return;
+  send({t:'leave'});keep('');G=null;clearTimeout(tm);
+  if(ws){ws.onclose=null;ws.close();ws=null}
+  lobby();
+}
 function send(d){if(ws&&ws.readyState===1)ws.send(JSON.stringify(d))}
 const seated=()=>C.filter(c=>G.seats[c]);
 const seatOf=id=>C.find(c=>G.seats[c]===id);
-function copyCode(){navigator.clipboard.writeText(code).then(()=>alert('Code copied!'));}
-
-function render3DDice(val, rolling){
-  const rotations={1:'rotateX(0deg) rotateY(0deg)',2:'rotateY(90deg)',3:'rotateX(-90deg)',4:'rotateX(90deg)',5:'rotateY(-90deg)',6:'rotateY(180deg)'};
-  return `<div class="dice-scene"><div class="dice-cube ${rolling?'rolling':''}" style="transform:${rotations[val]||'rotateX(0deg)'}">
-    <div class="dice-face face-1"><div class="dot d-center"></div></div>
-    <div class="dice-face face-2"><div class="dot d-tl"></div><div class="dot d-br"></div></div>
-    <div class="dice-face face-3"><div class="dot d-tl"></div><div class="dot d-center"></div><div class="dot d-br"></div></div>
-    <div class="dice-face face-4"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
-    <div class="dice-face face-5"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-center"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
-    <div class="dice-face face-6"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-ml"></div><div class="dot d-mr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
-  </div></div>`;
+function copyCode(){
+  navigator.clipboard.writeText(code).then(()=>{
+    alert('Game code ' + code + ' copied to clipboard!');
+  }).catch(()=>{});
 }
 
+/* ---------- 3D Dice HTML Generator ---------- */
+function render3DDice(val, rolling){
+  const rotations = {
+    1: 'rotateX(0deg) rotateY(0deg)',
+    2: 'rotateY(90deg)',
+    3: 'rotateX(-90deg)',
+    4: 'rotateX(90deg)',
+    5: 'rotateY(-90deg)',
+    6: 'rotateY(180deg)'
+  };
+  const rot = rotations[val] || 'rotateX(0deg) rotateY(0deg)';
+  const cubeClass = rolling ? 'dice-cube rolling' : 'dice-cube';
+
+  return `
+    <div class="dice-scene">
+      <div class="${cubeClass}" style="transform: ${rot}">
+        <div class="dice-face face-1"><div class="dot d-center"></div></div>
+        <div class="dice-face face-2"><div class="dot d-tl"></div><div class="dot d-br"></div></div>
+        <div class="dice-face face-3"><div class="dot d-tl"></div><div class="dot d-center"></div><div class="dot d-br"></div></div>
+        <div class="dice-face face-4"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+        <div class="dice-face face-5"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-center"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+        <div class="dice-face face-6"><div class="dot d-tl"></div><div class="dot d-tr"></div><div class="dot d-ml"></div><div class="dot d-mr"></div><div class="dot d-bl"></div><div class="dot d-br"></div></div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- drawing (Wood theme layout matching source) ---------- */
 function pos(c,p,i){
   if(p<0)return[OR[c][0]+2+(i%2)*2,OR[c][1]+2+(i>>1)*2];
   if(p<=51){const r=RING[(ST[c]+p)%52];return[r[0]+.5,r[1]+.5]}
   if(p<105){const r=HOME[c][p-100];return[r[0]+.5,r[1]+.5]}
   const f=FIN[c],o=(i-1.5)*.16;return c==='R'||c==='Y'?[f[0],f[1]+o]:[f[0]+o,f[1]];
 }
-
 function board(mv){
-  const K='#111',L=1.5;
-  let s=`<svg viewBox="0 0 600 600">`;
+  const K='#3a2817',L=1.5;
+  let s=`<svg viewBox="0 0 600 600"><rect width="600" height="600" fill="#fcf6ec"/>`;
   C.forEach(c=>{const[x,y]=OR[c];
-    s+=`<rect x="${x*U}" y="${y*U}" width="${6*U}" height="${6*U}" fill="${COL[c]}" stroke="${K}" stroke-width="3"/><rect x="${(x+1)*U}" y="${(y+1)*U}" width="${4*U}" height="${4*U}" rx="10" fill="#fdfbf7" stroke="${K}" stroke-width="3"/>`;
-    for(let i=0;i<4;i++){const q=pos(c,-1,i);s+=`<circle cx="${q[0]*U}" cy="${q[1]*U}" r="17" fill="#fdfbf7" stroke="${COL[c]}" stroke-width="4"/>`}
-    s+=`<rect x="${x*U}" y="${y*U}" width="${6*U}" height="${1.2*U}" fill="#1d3557" rx="4"/><text x="${(x+3)*U}" y="${(y+0.6)*U}" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#a8dadc">0.0%</text>`;
-    if(G.seats[c]){const t=G.names[c];
-      s+=`<text x="${(x+3)*U}" y="${(y+4.8)*U}" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${K}">${esc(t)}</text>`}
+    s+=`<rect x="${x*U}" y="${y*U}" width="${6*U}" height="${6*U}" fill="${COL[c]}" stroke="${K}" stroke-width="3"/><rect x="${(x+1)*U}" y="${(y+1)*U}" width="${4*U}" height="${4*U}" rx="14" fill="#fff" stroke="${K}" stroke-width="3"/>`;
+    for(let i=0;i<4;i++){const q=pos(c,-1,i);s+=`<circle cx="${q[0]*U}" cy="${q[1]*U}" r="19" fill="#fff" stroke="${COL[c]}" stroke-width="5"/>`}
+    if(G.seats[c]){
+      const nameTxt = G.names[c] + (G.seats[c]===me?' (you)':'');
+      s+=`<rect x="${(x+.5)*U}" y="${(y+.2)*U}" width="5*U" height="1.1*U" rx="6" fill="rgba(0,0,0,0.6)"/>`;
+      s+=`<text x="${(x+3)*U}" y="${(y+.75)*U}" font-size="16" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#fff">${esc(nameTxt)}</text>`;
+      s+=`<rect x="${(x+.5)*U}" y="${(y+4.7)*U}" width="5*U" height="1*U" rx="6" fill="#003366"/>`;
+      s+=`<text x="${(x+3)*U}" y="${(y+5.2)*U}" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#00e5ff">0.0%</text>`;
+    }
   });
-  RING.forEach((r,i)=>{const sc=C.find(c=>ST[c]===i);s+=`<rect x="${r[0]*U}" y="${r[1]*U}" width="${U}" height="${U}" fill="${sc?COL[sc]:'#fdfbf7'}" stroke="${K}" stroke-width="${L}"/>`});
+  RING.forEach((r,i)=>{const sc=C.find(c=>ST[c]===i);s+=`<rect x="${r[0]*U}" y="${r[1]*U}" width="${U}" height="${U}" fill="${sc?COL[sc]:'#fff'}" stroke="${K}" stroke-width="${L}"/>`});
   C.forEach(c=>HOME[c].forEach(r=>s+=`<rect x="${r[0]*U}" y="${r[1]*U}" width="${U}" height="${U}" fill="${COL[c]}" stroke="${K}" stroke-width="${L}"/>`));
   const m=7.5*U,k=6*U,k2=9*U;
   s+=`<polygon points="${k},${k} ${k},${k2} ${m},${m}" fill="${COL.R}" stroke="${K}" stroke-width="${L}"/><polygon points="${k},${k} ${k2},${k} ${m},${m}" fill="${COL.G}" stroke="${K}" stroke-width="${L}"/><polygon points="${k2},${k} ${k2},${k2} ${m},${m}" fill="${COL.Y}" stroke="${K}" stroke-width="${L}"/><polygon points="${k},${k2} ${k2},${k2} ${m},${m}" fill="${COL.B}" stroke="${K}" stroke-width="${L}"/>`;
-  
+  s+=`<rect x="1.5" y="1.5" width="597" height="597" fill="none" stroke="${K}" stroke-width="3"/>`;
   const seen={};
   C.forEach(c=>{if(!G.seats[c])return;G.tokens[c].forEach((p,i)=>{
     const q=pos(c,p,i),key=p<0?'b'+c+i:q[0]+','+q[1],n=seen[key]=(seen[key]||0)+1;
-    const o=p<0||p>=105?0:(n-1)*.16,can=mv&&c===G.turn&&mv.includes(i),cx=(q[0]+o)*U,cy=(q[1]-o)*U,r=p<0?14:15;
-    if(can)s+=`<circle cx="${cx}" cy="${cy}" r="${r+6}" fill="none" stroke="#000" stroke-width="2" stroke-dasharray="4 3"/>`;
-    s+=`<circle ${can?`onclick="playMoveSound();send({t:'move',i:${i}})"`:''} cx="${cx}" cy="${cy}" r="${r}" fill="${COL[c]}" stroke="#000" stroke-width="2.5"/><circle cx="${cx}" cy="${cy}" r="4" fill="#fff" fill-opacity="0.8"/>`;
+    const o=p<0||p>=105?0:(n-1)*.16,can=mv&&c===G.turn&&mv.includes(i),cx=(q[0]+o)*U,cy=(q[1]-o)*U,r=p<0?15:p>=105?8:n>1?12:16;
+    if(can)s+=`<circle class="mv" cx="${cx}" cy="${cy}" r="${r+7}" fill="none" stroke="${K}" stroke-width="3" stroke-dasharray="5 4" style="pointer-events:none"/>`;
+    s+=`<circle ${can?`class="mv" onclick="send({t:'move',i:${i}})"`:''} cx="${cx}" cy="${cy}" r="${r}" fill="${COL[c]}" stroke="${K}" stroke-width="3.5"/><circle cx="${cx}" cy="${cy}" r="${Math.max(3,r/3)}" fill="#fff" fill-opacity=".9" style="pointer-events:none"/>`;
+    
     if(p < 100 && !G.cut[c]) {
       s+=`<circle cx="${cx}" cy="${cy}" r="9" fill="#fff" stroke="#333" stroke-width="1" style="pointer-events:none"/>`;
       s+=`<text x="${cx}" y="${cy}" font-size="10" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">🔒</text>`;
@@ -243,20 +271,23 @@ function board(mv){
   })});
   return s+'</svg>';
 }
-
 function draw(){
-  if(!G)return;
-  let h=`<div class="card"><div class="row"><b>Code: ${code}</b><button class="alt" style="padding:3px 6px;font-size:11px" onclick="copyCode()">Copy</button><button class="alt" style="padding:3px 6px;font-size:11px;margin-left:auto" onclick="leaveRoom()">Leave</button></div><div class="row" style="margin-top:6px">`;
+  if(!G)return;const my=seatOf(me);
+  let h=`<div class="card"><div class="row"><b>Game ${code}</b> <button class="alt" style="padding:4px 8px;font-size:12px" onclick="copyCode()">Copy Code</button><button class="alt" style="padding:4px 8px;font-size:12px;margin-left:auto" onclick="leaveRoom()">Leave room</button><button class="alt" style="padding:4px 8px;font-size:12px" onclick="toggleSnd()">${snd?'🔊':'🔇'}</button></div><div class="row" style="margin-top:8px">`;
   C.forEach(c=>{const o=G.seats[c];
-    h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c]):'<span class="mut">Empty</span>'}</div>`});
+    h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':'')+(G.cut&&G.cut[c]?' ⚔':''):(G.phase==='lobby'?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">${my?'Move here':'Sit as '+NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
   h+='</div>';
-  if(G.phase==='lobby'){h+=`<p>${isHost?`<button onclick="send({t:'start'})" ${seated().length<2?'disabled':''}>Start Game</button>`:'Waiting for host…'}</p></div>`;$('app').innerHTML=h;return}
-  
+  if(G.phase==='lobby'){h+=`<p>${G.winner?`🏆 ${esc(G.names[G.winner])} won. `:''}${isHost?`<button onclick="send({t:'start'})" ${seated().length<2?'disabled':''}>Start game</button>`:'<span class="mut">Waiting for the host to start…</span>'}</p><p class="mut" style="margin:0">Pick any free color. With exactly 2 players, seats are set opposite each other when the game starts.</p></div>`;
+    $('app').innerHTML=h;return}
   const myTurn=G.seats[G.turn]===me&&!G.winner,mv=myTurn&&G.rolled?G.mv:null;
-  h+=`</div><div class="card">${board(mv)}<div class="row" style="margin-top:8px;justify-content:space-between"><div class="row">${render3DDice(G.dice||1, isRolling)}<button onclick="playDiceRollSound();send({t:'roll'})" ${myTurn&&!G.rolled?'':'disabled'}>Roll</button></div><span class="mut">${G.winner?'':myTurn?'Your Turn':esc(G.names[G.turn]||'')+'’s turn'}</span></div><p style="margin:6px 0 0;font-size:13px">${esc(G.log)}</p></div>`;
+  const diceVal = G.dice >= 1 && G.dice <= 6 ? G.dice : 1;
+  
+  h+=`</div><div class="card">${board(mv)}<div class="row" style="margin-top:10px;justify-content:space-between"><div class="row">${render3DDice(diceVal, isRolling)}<button onclick="send({t:'roll'})" ${myTurn&&!G.rolled?'':'disabled'}>Roll dice</button></div>
+  <span class="mut">${G.winner?'':myTurn?'Your turn':esc(G.names[G.turn]||'')+'’s turn'}</span></div><p style="margin:8px 0 0">${esc(G.log)}</p>
+  ${G.winner&&isHost?`<button onclick="send({t:'again'})">Play again</button>`:''}</div>`;
   $('app').innerHTML=h;
 }
 let saved='';try{saved=localStorage.getItem('ludo-room')||''}catch(e){}
 lobby();
-if(saved&&myName){code=saved;wait('Rejoining…');connect({t:'join',code:saved,n:myName,id:me})}
+if(saved&&myName){code=saved;wait('Rejoining your game…');connect({t:'join',code:saved,n:myName,id:me})}
 </script></body></html>
