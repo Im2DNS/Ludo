@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>Ludo with Friends</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
 :root{--bg:#f6f5f1;--fg:#222;--card:#fff;--mut:#777;--line:#ddd}
 @media (prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#eee;--card:#2a2a2d;--mut:#999;--line:#444}}
@@ -29,8 +28,7 @@ add(RING,1,6,1,0,5);add(RING,6,5,0,-1,6);add(RING,7,0,1,0,2);add(RING,8,1,0,1,5)
 const HOME={R:[],G:[],Y:[],B:[]};add(HOME.R,1,7,1,0,5);add(HOME.G,7,1,0,1,5);add(HOME.Y,13,7,-1,0,5);add(HOME.B,7,13,0,-1,5);
 const OR={R:[0,0],G:[9,0],Y:[9,9],B:[0,9]},FIN={R:[6.6,7.5],G:[7.5,6.6],Y:[8.4,7.5],B:[7.5,8.4]};
 const PIPS=['','⚀','⚁','⚂','⚃','⚄','⚅'];
-const OPTS={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:openrelay.metered.ca:80'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]}};
-let G=null,code='',me='',myName='',isHost=false,peer=null,conn=null,conns=[];
+let G=null,code='',me='',myName='',isHost=false,ws=null,tm=null;
 const $=s=>document.getElementById(s);
 try{myName=localStorage.getItem('ludo-name')||''}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -44,71 +42,40 @@ function lobby(msg){
   <button onclick="create()">Create game</button>
   <input id="cd" placeholder="Friend’s game code" maxlength="5" style="text-transform:uppercase;margin-top:12px">
   <button class="alt" onclick="join()">Join game</button><p class="mut">${msg||''}</p></div>
-  <div class="card mut">Rules: roll a 6 to leave base · a 6 or a capture gives another turn · land on a rival to send it home (not on ★ or start squares) · exact roll needed to reach the centre.<br><br>The host must keep this page open during the game.</div>`;
+  <div class="card mut">Rules: roll a 6 to leave base · a 6 or a capture gives another turn · land on a rival to send it home (not on ★ or start squares) · exact roll needed to reach the centre.<br><br>If you refresh the page you keep your seat.</div>`;
 }
 function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter your name first.');return false}myName=v;try{localStorage.setItem('ludo-name',myName)}catch(e){}return true}
 
-/* ---------- networking (host is the referee) ---------- */
-function create(){
-  if(!nameOk())return;
-  code=Array.from({length:5},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
-  isHost=true;me='host';
-  const t={};C.forEach(c=>t[c]=[-1,-1,-1,-1]);
-  G={phase:'lobby',seats:{R:'host',G:null,Y:null,B:null},names:{R:myName},tokens:t,turn:'R',dice:0,rolled:false,last:null,log:'Waiting for players…',winner:null};
-  $('app').innerHTML='<div class="card">Creating game…</div>';
-  if(peer)peer.destroy();conns=[];
-  peer=new Peer('ludo-'+code,OPTS);
-  peer.on('open',()=>draw());
-  peer.on('connection',cn=>{
-    conns.push(cn);
-    cn.on('open',()=>cn.send({s:G}));
-    cn.on('data',d=>handle(d,cn.peer));
-  });
-  peer.on('error',e=>{if(e.type==='unavailable-id')create();else lobby('Connection problem: '+e.type)});
+/* ---------- networking (server is the referee) ---------- */
+try{me=localStorage.getItem('ludo-id')||''}catch(e){}
+if(!me){me='p'+Math.random().toString(36).slice(2,12);try{localStorage.setItem('ludo-id',me)}catch(e){}}
+const wait=m=>{$('app').innerHTML=`<div class="card">${m}</div>`};
+const keep=v=>{try{v?localStorage.setItem('ludo-room',v):localStorage.removeItem('ludo-room')}catch(e){}};
+function connect(first){
+  clearTimeout(tm);
+  if(ws){ws.onclose=null;try{ws.close()}catch(e){}}
+  ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host);
+  tm=setTimeout(()=>{if(!G)lobby('Could not reach the server. It may be waking up, so wait a minute and try again.')},60000);
+  ws.onopen=()=>ws.send(JSON.stringify(first));
+  ws.onmessage=e=>{
+    clearTimeout(tm);const d=JSON.parse(e.data);
+    if(d.err){G=null;keep('');ws.onclose=null;ws.close();return lobby(d.err)}
+    if(d.s){G=d.s;code=d.code||code;isHost=G.host===me;keep(code);draw()}
+  };
+  ws.onclose=()=>{
+    if(G){wait('Connection lost. Reconnecting…');setTimeout(()=>connect({t:'join',code,n:myName,id:me}),2000)}
+    else{clearTimeout(tm);lobby('Could not connect to the server.')}
+  };
 }
+function create(){if(!nameOk())return;wait('Connecting… (the first connection can take up to a minute)');connect({t:'create',n:myName,id:me})}
 function join(){
   if(!nameOk())return;code=($('cd').value||'').trim().toUpperCase();if(code.length<3)return;
-  isHost=false;$('app').innerHTML='<div class="card">Connecting…</div>';
-  if(peer)peer.destroy();
-  peer=new Peer(OPTS);
-  const to=setTimeout(()=>{if(!G)lobby('Could not reach the host. Check the code, make sure the host’s page is open on the game screen, then try again.')},20000);
-  peer.on('open',id=>{
-    me=id;conn=peer.connect('ludo-'+code,{reliable:true});
-    conn.on('data',d=>{clearTimeout(to);G=d.s;draw()});
-    conn.on('close',()=>lobby('Disconnected from the host.'));
-  });
-  peer.on('error',e=>lobby(e.type==='peer-unavailable'?'No game with that code. Is the host’s page still open?':'Connection problem: '+e.type));
+  wait('Connecting… (the first connection can take up to a minute)');connect({t:'join',code,n:myName,id:me});
 }
-function send(d){if(isHost)handle(d,'host');else if(conn&&conn.open)conn.send(d)}
-function pub(){draw();conns.forEach(c=>c.open&&c.send({s:G}))}
-
-/* ---------- game logic (runs on host only) ---------- */
+function send(d){if(ws&&ws.readyState===1)ws.send(JSON.stringify(d))}
 const seated=()=>C.filter(c=>G.seats[c]);
 const seatOf=id=>C.find(c=>G.seats[c]===id);
 function movable(c,d){return G.tokens[c].map((p,i)=>(p<0?d===6:p+d<=56)?i:-1).filter(i=>i>=0)}
-function next(){const s=seated();G.turn=s[(s.indexOf(G.turn)+1)%s.length]}
-function handle(d,from){
-  if(d.t==='sit'){if(G.phase!=='lobby'||seatOf(from)||G.seats[d.c])return;G.seats[d.c]=from;G.names[d.c]=String(d.n||'Player').slice(0,14)}
-  else if(d.t==='start'){if(from!=='host'||seated().length<2)return;G.phase='play';G.turn=seated()[0];G.log=NM[G.turn]+' starts — roll!'}
-  else if(d.t==='again'){if(from!=='host'||!G.winner)return;C.forEach(c=>G.tokens[c]=[-1,-1,-1,-1]);G.phase='lobby';G.winner=null;G.rolled=false;G.dice=0;G.log='New game — start when ready'}
-  else if(d.t==='roll'){
-    if(G.phase!=='play'||G.seats[G.turn]!==from||G.rolled||G.winner)return;
-    const v=1+Math.floor(Math.random()*6),c=G.turn,nm=G.names[c];G.dice=v;G.last=c;
-    if(!movable(c,v).length){G.log=`${nm} rolled ${v} — no move`;next()}
-    else{G.rolled=true;G.log=`${nm} rolled ${v} — pick a token`}
-  }
-  else if(d.t==='move'){
-    const c=G.turn,v=G.dice,i=d.i;
-    if(G.seats[c]!==from||!G.rolled||!movable(c,v).includes(i))return;
-    const p=G.tokens[c][i],np=p<0?0:p+v;G.tokens[c][i]=np;let cap=false;
-    if(np<=50){const ab=(ST[c]+np)%52;
-      if(!SAFE.has(ab))C.forEach(o=>{if(o===c)return;G.tokens[o]=G.tokens[o].map(q=>{if(q>=0&&q<=50&&(ST[o]+q)%52===ab){cap=true;return -1}return q})})}
-    G.rolled=false;
-    if(G.tokens[c].every(q=>q===56)){G.winner=c;G.log=`🏆 ${G.names[c]} wins!`}
-    else{G.log=`${G.names[c]} moved`+(cap?' and captured a token!':'');if(v!==6&&!cap)next();else G.log+=' Roll again.'}
-  }
-  pub();
-}
 
 /* ---------- drawing ---------- */
 function pos(c,p,i){
@@ -149,5 +116,7 @@ function draw(){
   ${G.winner&&isHost?`<button onclick="send({t:'again'})">Play again</button>`:''}</div>`;
   $('app').innerHTML=h;
 }
+let saved='';try{saved=localStorage.getItem('ludo-room')||''}catch(e){}
 lobby();
+if(saved&&myName){code=saved;wait('Rejoining your game…');connect({t:'join',code:saved,n:myName,id:me})}
 </script></body></html>
