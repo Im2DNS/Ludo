@@ -7,18 +7,41 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, maxPayload: 2048 });
 
 const C = ['R', 'G', 'Y', 'B'], NM = { R: 'Red', G: 'Green', Y: 'Yellow', B: 'Blue' };
-const ST = { R: 0, G: 13, Y: 26, B: 39 }, SAFE = new Set([0, 13, 26, 39, 8, 21, 34, 47]);
+const ST = { R: 0, G: 13, Y: 26, B: 39 }, SAFE = new Set([0, 13, 26, 39]); // start squares only, no star squares
 const rooms = new Map();
 
 const seated = G => C.filter(c => G.seats[c]);
 const seatOf = (G, id) => C.find(c => G.seats[c] === id);
-const movable = (G, c, d) => G.tokens[c].map((p, i) => (p < 0 ? d === 6 : p + d <= 56) ? i : -1).filter(i => i >= 0);
+// Token value v: -1 base | 0..51 ring steps from own start | 100..104 home lane | 105 finished
+function dest(G, c, v, d) {
+  if (v === -1) return d === 1 ? 0 : null;                 // leave base only on a 1
+  if (v >= 100) { const L = v - 100 + d; return L <= 5 ? 100 + L : null; }
+  const t = v + d;
+  if (G.cut[c]) { if (t <= 50) return t; const L = t - 51; return L <= 5 ? 100 + L : null; } // lane only after a capture
+  return t >= 52 ? t - 52 : t;                             // no capture yet: keep circling
+}
+function victims(G, c, nv) {
+  const out = [];
+  if (nv < 0 || nv > 51) return out;
+  const ab = (ST[c] + nv) % 52; if (SAFE.has(ab)) return out;
+  C.forEach(o => { if (o !== c) G.tokens[o].forEach((q, j) => { if (q >= 0 && q <= 51 && (ST[o] + q) % 52 === ab) out.push([o, j]); }); });
+  return out;
+}
+function movable(G, c, d) {
+  const all = [], cap = [];
+  G.tokens[c].forEach((v, i) => {
+    if (v === 105) return;
+    const nv = dest(G, c, v, d); if (nv === null) return;
+    all.push(i); if (victims(G, c, nv).length) cap.push(i);
+  });
+  return cap.length ? cap : all;                           // must capture when possible
+}
 const clean = s => String(s || 'Player').replace(/[<>&"]/g, '').trim().slice(0, 14) || 'Player';
 
 function newGame(id, n) {
   const t = {}; C.forEach(c => t[c] = [-1, -1, -1, -1]);
   return { host: id, phase: 'lobby', seats: { R: id, G: null, Y: null, B: null }, names: { R: n }, tokens: t,
-    turn: 'R', dice: 0, rolled: false, last: null, log: 'Waiting for players…', winner: null };
+    turn: 'R', dice: 0, rolled: false, mv: [], cut: { R: false, G: false, Y: false, B: false }, ones: { R: 0, G: 0, Y: 0, B: 0 }, last: null, log: 'Waiting for players…', winner: null };
 }
 function nextTurn(G) { const s = seated(G); G.turn = s[(s.indexOf(G.turn) + 1) % s.length]; }
 
@@ -32,27 +55,30 @@ function act(G, d, from) {
   } else if (d.t === 'again') {
     if (from !== G.host || !G.winner) return;
     C.forEach(c => G.tokens[c] = [-1, -1, -1, -1]);
-    G.phase = 'lobby'; G.winner = null; G.rolled = false; G.dice = 0; G.log = 'New game — start when ready';
+    G.phase = 'lobby'; G.winner = null; G.rolled = false; G.dice = 0; G.mv = [];
+    C.forEach(c => { G.cut[c] = false; G.ones[c] = 0; }); G.log = 'New game — start when ready';
   } else if (d.t === 'roll') {
     if (G.phase !== 'play' || G.seats[G.turn] !== from || G.rolled || G.winner) return;
     const v = 1 + Math.floor(Math.random() * 6), c = G.turn, nm = G.names[c];
-    G.dice = v; G.last = c;
-    if (!movable(G, c, v).length) { G.log = `${nm} rolled ${v} — no move`; nextTurn(G); }
-    else { G.rolled = true; G.log = `${nm} rolled ${v} — pick a token`; }
+    G.dice = v; G.last = c; G.mv = [];
+    G.ones[c] = v === 1 ? G.ones[c] + 1 : 0;
+    if (G.ones[c] >= 3) {                                   // three 1s in a row: own token nearest home goes back
+      G.ones[c] = 0;
+      let best = -1; G.tokens[c].forEach((t, i) => { if (t >= 0 && t < 105 && (best < 0 || t > G.tokens[c][best])) best = i; });
+      if (best >= 0) { G.tokens[c][best] = -1; G.log = `${nm} rolled 1 three times — own token sent back to base!`; nextTurn(G); return; }
+    }
+    const m = movable(G, c, v);
+    if (!m.length) { G.log = `${nm} rolled ${v} — no move`; nextTurn(G); }
+    else { G.rolled = true; G.mv = m; G.log = `${nm} rolled ${v} — pick a token` + (m.length && victims(G, c, dest(G, c, G.tokens[c][m[0]], v)).length ? ' (you must capture)' : ''); }
   } else if (d.t === 'move') {
     const c = G.turn, v = G.dice, i = d.i;
-    if (G.phase !== 'play' || G.seats[c] !== from || !G.rolled || !movable(G, c, v).includes(i)) return;
-    const p = G.tokens[c][i], np = p < 0 ? 0 : p + v; G.tokens[c][i] = np; let cap = false;
-    if (np <= 50) {
-      const ab = (ST[c] + np) % 52;
-      if (!SAFE.has(ab)) C.forEach(o => {
-        if (o === c) return;
-        G.tokens[o] = G.tokens[o].map(q => { if (q >= 0 && q <= 50 && (ST[o] + q) % 52 === ab) { cap = true; return -1; } return q; });
-      });
-    }
-    G.rolled = false;
-    if (G.tokens[c].every(q => q === 56)) { G.winner = c; G.log = `🏆 ${G.names[c]} wins!`; }
-    else { G.log = `${G.names[c]} moved` + (cap ? ' and captured a token!' : ''); if (v !== 6 && !cap) nextTurn(G); else G.log += ' Roll again.'; }
+    if (G.phase !== 'play' || G.seats[c] !== from || !G.rolled || !G.mv.includes(i)) return;
+    const nv = dest(G, c, G.tokens[c][i], v), vs = victims(G, c, nv);
+    G.tokens[c][i] = nv; vs.forEach(([o, j]) => G.tokens[o][j] = -1);
+    if (vs.length) G.cut[c] = true;
+    G.rolled = false; G.mv = [];
+    if (G.tokens[c].every(q => q === 105)) { G.winner = c; G.log = `🏆 ${G.names[c]} wins!`; }
+    else { G.log = `${G.names[c]} moved` + (vs.length ? ' and captured a token — can now enter home!' : ''); if (v !== 6 && !vs.length) nextTurn(G); else G.log += ' Roll again.'; }
   } else return;
 }
 
@@ -98,3 +124,4 @@ setInterval(() => {
 }, 30000);
 
 server.listen(process.env.PORT || 3000, () => console.log('Ludo server running'));
+                 
