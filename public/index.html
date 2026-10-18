@@ -10,11 +10,13 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-
 h1{font-size:22px;margin:4px 0 12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
 input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);width:100%;margin:4px 0 8px}
-button{font:inherit;padding:10px 16px;border-radius:10px;border:0;background:#3b7ddd;color:#fff;cursor:pointer;margin:2px}
+button{font:inherit;padding:10px 16px;border-radius:10px;border:0;background:#3b7ddd;color:#fff;cursor:pointer;margin:2px;transition:transform 0.1s ease, background-color 0.2s ease}
+button:hover:not(:disabled){filter:brightness(1.1);transform:translateY(-1px)}
+button:active:not(:disabled){transform:translateY(0)}
 button.alt{background:var(--line);color:var(--fg)}button:disabled{opacity:.4;cursor:default}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.seat{flex:1 1 45%;border:2px solid;border-radius:10px;padding:6px 8px;font-size:14px}
-.seat.on{background:rgba(128,128,128,.18)}
+.seat{flex:1 1 45%;border:2px solid;border-radius:10px;padding:6px 8px;font-size:14px;transition:all 0.3s ease}
+.seat.on{background:rgba(59,125,221,0.15);box-shadow:0 0 12px rgba(59,125,221,0.3)}
 svg{width:100%;height:auto;display:block;touch-action:manipulation}
 .dice{font-size:44px;line-height:1}.mut{color:var(--mut);font-size:14px}
 @keyframes p{50%{opacity:.35}}.mv{animation:p .8s infinite;cursor:pointer}
@@ -46,11 +48,11 @@ function lobby(msg){
 }
 function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter your name first.');return false}myName=v;try{localStorage.setItem('ludo-name',myName)}catch(e){}return true}
 
-/* ---------- networking (server is the referee) ---------- */
+/* ---------- networking ---------- */
 try{me=localStorage.getItem('ludo-id')||''}catch(e){}
 if(!me){me='p'+Math.random().toString(36).slice(2,12);try{localStorage.setItem('ludo-id',me)}catch(e){}}
 
-/* ---------- sound (synthesized, no files) ---------- */
+/* ---------- sound ---------- */
 let AC=null,snd=true;try{snd=localStorage.getItem('ludo-snd')!=='off'}catch(e){}
 function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==='suspended')AC.resume();return AC}
 ['click','touchstart'].forEach(ev=>document.addEventListener(ev,ac,{passive:true}));
@@ -151,6 +153,11 @@ function leaveRoom(){
 function send(d){if(ws&&ws.readyState===1)ws.send(JSON.stringify(d))}
 const seated=()=>C.filter(c=>G.seats[c]);
 const seatOf=id=>C.find(c=>G.seats[c]===id);
+function copyCode(){
+  navigator.clipboard.writeText(code).then(()=>{
+    alert('Game code ' + code + ' copied to clipboard!');
+  }).catch(()=>{});
+}
 
 /* ---------- drawing ---------- */
 function pos(c,p,i){
@@ -182,7 +189,7 @@ function board(mv){
 }
 function draw(){
   if(!G)return;const my=seatOf(me);
-  let h=`<div class="card"><div class="row"><b>Game ${code}</b><span class="mut">share this code with friends</span><select onchange="setDice(this.value)" style="margin-left:auto;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)">${DICE.map((d,i)=>`<option value="${i}"${i===dsel?' selected':''}>${d.n}</option>`).join('')}</select><button class="alt" onclick="toggleSnd()">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div><div class="row" style="margin-top:8px">`;
+  let h=`<div class="card"><div class="row"><b>Game ${code}</b> <button class="alt" style="padding:4px 8px;font-size:12px" onclick="copyCode()">Copy Code</button><span class="mut">share with friends</span><select onchange="setDice(this.value)" style="margin-left:auto;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)">${DICE.map((d,i)=>`<option value="${i}"${i===dsel?' selected':''}>${d.n}</option>`).join('')}</select><button class="alt" onclick="toggleSnd()">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div><div class="row" style="margin-top:8px">`;
   C.forEach(c=>{const o=G.seats[c];
     h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':'')+(G.cut&&G.cut[c]?' ⚔':''):(G.phase==='lobby'?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">${my?'Move here':'Sit as '+NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
   h+='</div>';
