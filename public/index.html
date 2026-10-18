@@ -60,17 +60,21 @@ function tone(f,t,d,type,v,f2){const a=ac();if(!a||!snd)return;const n=a.current
 let MS=null;
 function out(){const a=ac();if(!a)return null;if(!MS){MS=a.createGain();MS.gain.value=.9;const k=a.createDynamicsCompressor();MS.connect(k);k.connect(a.destination)}return MS}
 function nz(a,len){const b=a.createBuffer(1,len,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<len;i++)x[i]=Math.random()*2-1;return b}
-function hit(t,v,f){
-  const a=ac(),o=out();if(!a||!snd||!o)return;const n=a.currentTime+t;
+function hit(t,v,f,o){
+  o=o||{};const a=ac(),m=out();if(!a||!snd||!m)return;const n=a.currentTime+t;
   const s=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();
-  s.buffer=nz(a,Math.floor(a.sampleRate*.03));bp.type='bandpass';bp.frequency.value=f*2.2;bp.Q.value=.9;
+  s.buffer=nz(a,Math.floor(a.sampleRate*.03));bp.type='bandpass';bp.frequency.value=f*(o.br||2.2);bp.Q.value=.9;
   g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+.03);
-  s.connect(bp);bp.connect(g);g.connect(o);s.start(n);
-  [[1,1],[2.76,.4],[5.4,.15]].forEach(([r,m])=>{
-    const os=a.createOscillator(),gg=a.createGain(),d=.05+.08/r;
+  s.connect(bp);let last=bp;
+  if(o.lp){const l=a.createBiquadFilter();l.type='lowpass';l.frequency.value=o.lp;bp.connect(l);last=l}
+  last.connect(g);g.connect(m);s.start(n);
+  (o.p||[[1,1],[2.76,.4],[5.4,.15]]).forEach(([r,k])=>{
+    const os=a.createOscillator(),gg=a.createGain(),d=(.05+.08/r)*(o.dec||1);
     os.frequency.setValueAtTime(f*r*1.04,n);os.frequency.exponentialRampToValueAtTime(f*r,n+.03);
-    gg.gain.setValueAtTime(v*m*.8,n);gg.gain.exponentialRampToValueAtTime(.001,n+d);
-    os.connect(gg);gg.connect(o);os.start(n);os.stop(n+d+.02)});
+    gg.gain.setValueAtTime(v*k*.8,n);gg.gain.exponentialRampToValueAtTime(.001,n+d);
+    let src=gg;os.connect(gg);
+    if(o.lp){const l=a.createBiquadFilter();l.type='lowpass';l.frequency.value=o.lp;gg.connect(l);src=l}
+    src.connect(m);os.start(n);os.stop(n+d+.02)});
 }
 function swish(t,v){
   const a=ac(),o=out();if(!a||!snd||!o)return;const n=a.currentTime+t,s=a.createBufferSource(),hp=a.createBiquadFilter(),g=a.createGain();
@@ -78,10 +82,32 @@ function swish(t,v){
   g.gain.setValueAtTime(.001,n);g.gain.linearRampToValueAtTime(v,n+.03);g.gain.exponentialRampToValueAtTime(.001,n+.09);
   s.connect(hp);hp.connect(g);g.connect(o);s.start(n);
 }
+const DICE=[
+ {n:'Wooden table',c:{tn:22,tf:[900,2400],t0:.38,gap:.12,v:.7,n:7,bf:[1000,1700]}},
+ {n:'Cup shake and throw',c:{cup:1,t0:1.0,gap:.13,v:.65,n:5,bf:[1000,1600]}},
+ {n:'Hard plastic',c:{tn:26,tf:[1800,3200],t0:.36,gap:.1,v:.55,n:7,bf:[1900,2800],o:{dec:.55,br:2.6}}},
+ {n:'Casino felt',c:{tn:12,tf:[300,600],t0:.3,gap:.13,v:.9,n:5,bf:[300,450],o:{lp:1100,dec:.7,br:1.6}}},
+ {n:'Stone or ceramic',c:{tn:16,tf:[1400,2600],t0:.34,gap:.14,v:.6,n:6,bf:[1800,2600],o:{dec:2.2,p:[[1,1],[2.3,.6],[4.1,.35]]}}},
+ {n:'Quick roll',c:{tn:10,tf:[900,2200],tt:.18,t0:.2,gap:.1,v:.7,n:3,bf:[1000,1600]}}];
+let dsel=0;try{dsel=Math.min(5,Math.max(0,+localStorage.getItem('ludo-dice')||0))}catch(e){}
+const RN=(a,b)=>a+Math.random()*(b-a);
+function knock(t,v,f,damp){
+  const a=ac(),o=out();if(!a||!snd||!o)return;const n=a.currentTime+t;
+  const s=a.createBufferSource(),bp=a.createBiquadFilter(),lp=a.createBiquadFilter(),g=a.createGain();
+  s.buffer=nz(a,Math.floor(a.sampleRate*.03));bp.type='bandpass';bp.frequency.value=f*1.8;bp.Q.value=.7;
+  lp.type='lowpass';lp.frequency.value=2500+f*(1-damp)*4;
+  g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+.03);
+  s.connect(bp);bp.connect(lp);lp.connect(g);g.connect(o);s.start(n);
+  [[1,1],[2.3,.45],[4.1,.18]].forEach(([r,m])=>{
+    const os=a.createOscillator(),gg=a.createGain(),d=(.03+.09*(1-damp))/Math.sqrt(r);
+    os.frequency.setValueAtTime(f*r*1.05,n);os.frequency.exponentialRampToValueAtTime(f*r,n+.025);
+    gg.gain.setValueAtTime(v*m*.85,n);gg.gain.exponentialRampToValueAtTime(.001,n+d);
+    os.connect(gg);gg.connect(o);os.start(n);os.stop(n+d+.02)});
+}
 function rollSnd(){
-  for(let i=0;i<22;i++)hit(Math.random()*.4,.08+Math.random()*.1,900+Math.random()*1500);
-  let t=.38,gap=.12,v=.7;
-  for(let i=0;i<7;i++){hit(t,v,1000+Math.random()*700);hit(t+.012,v*.5,1500+Math.random()*600);t+=gap;gap*=.72;v*=.72}
+  for(let i=0;i<12;i++)knock(RN(0,.25),RN(.05,.1),RN(380,600),.85);
+  let t=.25,gap=.14,v=.6;
+  for(let i=0;i<5;i++){knock(t,v,RN(420,620),.85);t+=gap;gap*=.72;v*=.7}
 }
 function moveSnd(){swish(0,.05);hit(.05,.55,820);hit(.12,.28,640)}
 function capSnd(){hit(0,.8,420);hit(.05,.5,300);tone(110,0,.22,'sine',.3,60)}
@@ -147,7 +173,7 @@ function board(mv){
 }
 function draw(){
   if(!G)return;const my=seatOf(me);
-  let h=`<div class="card"><div class="row"><b>Game ${code}</b><span class="mut">share this code with friends</span><button class="alt" style="margin-left:auto" onclick="toggleSnd()">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div><div class="row" style="margin-top:8px">`;
+  let h=`<div class="card"><div class="row"><b>Game ${code}</b><span class="mut">share this code with friends</span><select onchange="setDice(this.value)" style="margin-left:auto;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)">${DICE.map((d,i)=>`<option value="${i}"${i===dsel?' selected':''}>${d.n}</option>`).join('')}</select><button class="alt" onclick="toggleSnd()">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div><div class="row" style="margin-top:8px">`;
   C.forEach(c=>{const o=G.seats[c];
     h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':'')+(G.cut&&G.cut[c]?' ⚔':''):(G.phase==='lobby'&&!my?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">Sit as ${NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
   h+='</div>';
