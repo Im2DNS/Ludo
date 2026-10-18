@@ -7,18 +7,18 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, maxPayload: 2048 });
 
 const C = ['R', 'G', 'Y', 'B'], NM = { R: 'Red', G: 'Green', Y: 'Yellow', B: 'Blue' };
-const ST = { R: 0, G: 13, Y: 26, B: 39 }, SAFE = new Set([0, 13, 26, 39]); // start squares only, no star squares
+const ST = { R: 0, G: 13, Y: 26, B: 39 }, SAFE = new Set([0, 13, 26, 39]);
 const rooms = new Map();
 
 const seated = G => C.filter(c => G.seats[c]);
 const seatOf = (G, id) => C.find(c => G.seats[c] === id);
-// Token value v: -1 base | 0..51 ring steps from own start | 100..104 home lane | 105 finished
+
 function dest(G, c, v, d) {
-  if (v === -1) return d === 1 ? 0 : null;                 // leave base only on a 1
+  if (v === -1) return d === 1 ? 0 : null;
   if (v >= 100) { const L = v - 100 + d; return L <= 5 ? 100 + L : null; }
   const t = v + d;
-  if (G.cut[c]) { if (t <= 50) return t; const L = t - 51; return L <= 5 ? 100 + L : null; } // lane only after a capture
-  return t >= 52 ? t - 52 : t;                             // no capture yet: keep circling
+  if (G.cut[c]) { if (t <= 50) return t; const L = t - 51; return L <= 5 ? 100 + L : null; }
+  return t >= 52 ? t - 52 : t;
 }
 function victims(G, c, nv) {
   const out = [];
@@ -34,7 +34,7 @@ function movable(G, c, d) {
     const nv = dest(G, c, v, d); if (nv === null) return;
     all.push(i); if (victims(G, c, nv).length) cap.push(i);
   });
-  return cap.length ? cap : all;                           // must capture when possible
+  return cap.length ? cap : all;
 }
 const clean = s => String(s || 'Player').replace(/[<>&"]/g, '').trim().slice(0, 14) || 'Player';
 
@@ -48,12 +48,12 @@ function nextTurn(G) { const s = seated(G); G.turn = s[(s.indexOf(G.turn) + 1) %
 function act(G, d, from) {
   if (d.t === 'sit') {
     if (G.phase !== 'lobby' || !C.includes(d.c) || G.seats[d.c]) return;
-    const old = seatOf(G, from); if (old) { G.seats[old] = null; delete G.names[old]; }   // allows moving to another color
+    const old = seatOf(G, from); if (old) { G.seats[old] = null; delete G.names[old]; }
     G.seats[d.c] = from; G.names[d.c] = clean(d.n);
   } else if (d.t === 'start') {
     if (from !== G.host || G.phase !== 'lobby' || seated(G).length < 2) return;
     const s2 = seated(G);
-    if (s2.length === 2) {                                   // two players sit opposite each other
+    if (s2.length === 2) {
       const OP = { R: 'Y', Y: 'R', G: 'B', B: 'G' }, [a, b] = s2;
       if (OP[a] !== b) { const nb = OP[a]; G.seats[nb] = G.seats[b]; G.names[nb] = G.names[b]; G.seats[b] = null; delete G.names[b]; }
     }
@@ -68,7 +68,7 @@ function act(G, d, from) {
     const v = 1 + Math.floor(Math.random() * 6), c = G.turn, nm = G.names[c];
     G.dice = v; G.last = c; G.mv = [];
     G.ones[c] = v === 1 ? G.ones[c] + 1 : 0;
-    if (G.ones[c] >= 3) {                                   // three 1s in a row: own token nearest home goes back
+    if (G.ones[c] >= 3) {
       G.ones[c] = 0;
       let best = -1; G.tokens[c].forEach((t, i) => { if (t >= 0 && t < 105 && (best < 0 || t > G.tokens[c][best])) best = i; });
       if (best >= 0) { G.tokens[c][best] = -1; G.log = `${nm} rolled 1 three times — own token sent back to base!`; nextTurn(G); return; }
@@ -164,7 +164,7 @@ setInterval(() => {
   rooms.forEach((r, code) => {
     if (r.clients.size === 0) {
       if (!r.empty) r.empty = Date.now();
-      else if (Date.now() - r.empty > 1800000) rooms.delete(code); // Clean up after 30 mins of zero active connections
+      else if (Date.now() - r.empty > 1800000) rooms.delete(code);
     } else {
       r.empty = 0;
     }
