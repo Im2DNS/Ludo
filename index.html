@@ -29,6 +29,7 @@ add(RING,1,6,1,0,5);add(RING,6,5,0,-1,6);add(RING,7,0,1,0,2);add(RING,8,1,0,1,5)
 const HOME={R:[],G:[],Y:[],B:[]};add(HOME.R,1,7,1,0,5);add(HOME.G,7,1,0,1,5);add(HOME.Y,13,7,-1,0,5);add(HOME.B,7,13,0,-1,5);
 const OR={R:[0,0],G:[9,0],Y:[9,9],B:[0,9]},FIN={R:[6.6,7.5],G:[7.5,6.6],Y:[8.4,7.5],B:[7.5,8.4]};
 const PIPS=['','⚀','⚁','⚂','⚃','⚄','⚅'];
+const OPTS={config:{iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:openrelay.metered.ca:80'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]}};
 let G=null,code='',me='',myName='',isHost=false,peer=null,conn=null,conns=[];
 const $=s=>document.getElementById(s);
 try{myName=localStorage.getItem('ludo-name')||''}catch(e){}
@@ -54,7 +55,7 @@ function create(){
   G={phase:'lobby',seats:{R:'host',G:null,Y:null,B:null},names:{R:myName},tokens:t,turn:'R',dice:0,rolled:false,last:null,log:'Waiting for players…',winner:null};
   $('app').innerHTML='<div class="card">Creating game…</div>';
   if(peer)peer.destroy();conns=[];
-  peer=new Peer('ludo-'+code);
+  peer=new Peer('ludo-'+code,OPTS);
   peer.on('open',()=>draw());
   peer.on('connection',cn=>{
     conns.push(cn);
@@ -67,10 +68,11 @@ function join(){
   nameOk();code=($('cd').value||'').trim().toUpperCase();if(code.length<3)return;
   isHost=false;$('app').innerHTML='<div class="card">Connecting…</div>';
   if(peer)peer.destroy();
-  peer=new Peer();
+  peer=new Peer(OPTS);
+  const to=setTimeout(()=>{if(!G)lobby('Could not reach the host. Check the code, make sure the host’s page is open on the game screen, then try again.')},20000);
   peer.on('open',id=>{
     me=id;conn=peer.connect('ludo-'+code,{reliable:true});
-    conn.on('data',d=>{G=d.s;draw()});
+    conn.on('data',d=>{clearTimeout(to);G=d.s;draw()});
     conn.on('close',()=>lobby('Disconnected from the host.'));
   });
   peer.on('error',e=>lobby(e.type==='peer-unavailable'?'No game with that code. Is the host’s page still open?':'Connection problem: '+e.type));
