@@ -48,7 +48,7 @@ svg{width:100%;height:auto;display:block;touch-action:manipulation;background:#f
   position: absolute;
   width: 50px;
   height: 50px;
-  background: #2b9348; /* Matches the vibrant green source dice */
+  background: #2b9348;
   border: 2px solid #000;
   border-radius: 8px;
   display: grid;
@@ -94,7 +94,6 @@ const $=s=>document.getElementById(s);
 try{myName=localStorage.getItem('ludo-name')||''}catch(e){}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* --- Audio Synthesizer Matching Source Sound Effects --- */
 let AC=null;
 function getAudioContext(){
   if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
@@ -106,7 +105,6 @@ function getAudioContext(){
 function playDiceRollSound(){
   const ctx = getAudioContext();
   if(!ctx) return;
-  // Simulating wood table dice rolling clatter (multiple fast transient clicks)
   for(let i=0; i<6; i++){
     setTimeout(() => {
       if(ctx.state==='suspended') return;
@@ -180,7 +178,18 @@ function connect(first){
   ws.onclose=()=>{if(G){wait('Reconnecting…');setTimeout(()=>connect({t:'join',code,n:myName,id:me}),2000)}else{lobby('Disconnected.')}};
 }
 function create(){if(!nameOk())return;connect({t:'create',n:myName,id:me})}
-function join(){if(!nameOk())return;code=($('cd').value||'').trim().toUpperCase();if(code.length<3)return;connect({t:'join',code,n:myName,id:me})}
+function join(){
+  if(!nameOk())return;
+  const cdInput = $('cd');
+  if(!cdInput) return;
+  code = (cdInput.value || '').trim().toUpperCase();
+  if(code.length < 3) {
+    lobby('Please enter a valid 5-letter game code.');
+    return;
+  }
+  wait('Connecting to game…');
+  connect({t:'join', code: code, n: myName, id: me});
+}
 function leaveRoom(){if(!confirm('Leave game?'))return;send({t:'leave'});keep('');G=null;lobby()}
 function send(d){if(ws&&ws.readyState===1)ws.send(JSON.stringify(d))}
 const seated=()=>C.filter(c=>G.seats[c]);
@@ -212,7 +221,6 @@ function board(mv){
   C.forEach(c=>{const[x,y]=OR[c];
     s+=`<rect x="${x*U}" y="${y*U}" width="${6*U}" height="${6*U}" fill="${COL[c]}" stroke="${K}" stroke-width="3"/><rect x="${(x+1)*U}" y="${(y+1)*U}" width="${4*U}" height="${4*U}" rx="10" fill="#fdfbf7" stroke="${K}" stroke-width="3"/>`;
     for(let i=0;i<4;i++){const q=pos(c,-1,i);s+=`<circle cx="${q[0]*U}" cy="${q[1]*U}" r="17" fill="#fdfbf7" stroke="${COL[c]}" stroke-width="4"/>`}
-    // Percentage Header matching Source UI layout
     s+=`<rect x="${x*U}" y="${y*U}" width="${6*U}" height="${1.2*U}" fill="#1d3557" rx="4"/><text x="${(x+3)*U}" y="${(y+0.6)*U}" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#a8dadc">0.0%</text>`;
     if(G.seats[c]){const t=G.names[c];
       s+=`<text x="${(x+3)*U}" y="${(y+4.8)*U}" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="${K}">${esc(t)}</text>`}
@@ -228,7 +236,10 @@ function board(mv){
     const o=p<0||p>=105?0:(n-1)*.16,can=mv&&c===G.turn&&mv.includes(i),cx=(q[0]+o)*U,cy=(q[1]-o)*U,r=p<0?14:15;
     if(can)s+=`<circle cx="${cx}" cy="${cy}" r="${r+6}" fill="none" stroke="#000" stroke-width="2" stroke-dasharray="4 3"/>`;
     s+=`<circle ${can?`onclick="playMoveSound();send({t:'move',i:${i}})"`:''} cx="${cx}" cy="${cy}" r="${r}" fill="${COL[c]}" stroke="#000" stroke-width="2.5"/><circle cx="${cx}" cy="${cy}" r="4" fill="#fff" fill-opacity="0.8"/>`;
-    if(p < 100 && !G.cut[c]) s+=`<text x="${cx}" y="${cy}" font-size="10" text-anchor="middle" dominant-baseline="central">🔒</text>`;
+    if(p < 100 && !G.cut[c]) {
+      s+=`<circle cx="${cx}" cy="${cy}" r="9" fill="#fff" stroke="#333" stroke-width="1" style="pointer-events:none"/>`;
+      s+=`<text x="${cx}" y="${cy}" font-size="10" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">🔒</text>`;
+    }
   })});
   return s+'</svg>';
 }
