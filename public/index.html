@@ -49,6 +49,29 @@ function nameOk(){const v=($('nm').value||'').trim();if(!v){lobby('Please enter 
 /* ---------- networking (server is the referee) ---------- */
 try{me=localStorage.getItem('ludo-id')||''}catch(e){}
 if(!me){me='p'+Math.random().toString(36).slice(2,12);try{localStorage.setItem('ludo-id',me)}catch(e){}}
+
+/* ---------- sound (synthesized, no files) ---------- */
+let AC=null,snd=true;try{snd=localStorage.getItem('ludo-snd')!=='off'}catch(e){}
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==='suspended')AC.resume();return AC}
+['click','touchstart'].forEach(ev=>document.addEventListener(ev,ac,{passive:true}));
+function tone(f,t,d,type,v,f2){const a=ac();if(!a||!snd)return;const n=a.currentTime+t,o=a.createOscillator(),g=a.createGain();
+  o.type=type||'sine';o.frequency.setValueAtTime(f,n);if(f2)o.frequency.exponentialRampToValueAtTime(f2,n+d);
+  g.gain.setValueAtTime(v||.2,n);g.gain.exponentialRampToValueAtTime(.001,n+d);o.connect(g);g.connect(a.destination);o.start(n);o.stop(n+d+.02)}
+function tick(t,v,f){const a=ac();if(!a||!snd)return;const n=a.currentTime+t,len=Math.floor(a.sampleRate*.04),b=a.createBuffer(1,len,a.sampleRate),x=b.getChannelData(0);
+  for(let i=0;i<len;i++)x[i]=(Math.random()*2-1)*(1-i/len);
+  const src=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();src.buffer=b;fl.type='bandpass';fl.frequency.value=f||2200;g.gain.value=v||.4;
+  src.connect(fl);fl.connect(g);g.connect(a.destination);src.start(n)}
+function rollSnd(){for(let i=0;i<9;i++)tick(i*.07+Math.random()*.02,.25+Math.random()*.3,1500+Math.random()*2500);tone(140,.66,.12,'sine',.3,70)}
+function moveSnd(){tone(520,0,.1,'triangle',.35,250);tick(0,.3,1800)}
+function capSnd(){tone(420,0,.28,'sawtooth',.14,90)}
+function winSnd(){[523,659,784,1047].forEach((f,i)=>tone(f,i*.14,.3,'triangle',.25))}
+function sfx(p,g){
+  if(!p||p.log===g.log)return;
+  if(g.winner&&!p.winner){moveSnd();setTimeout(winSnd,200);return}
+  if(/ rolled /.test(g.log))rollSnd();
+  else if(JSON.stringify(p.tokens)!==JSON.stringify(g.tokens)){moveSnd();if(/captured/.test(g.log))setTimeout(capSnd,150)}
+}
+function toggleSnd(){snd=!snd;try{localStorage.setItem('ludo-snd',snd?'on':'off')}catch(e){}if(snd){ac();moveSnd()}draw()}
 const wait=m=>{$('app').innerHTML=`<div class="card">${m}</div>`};
 const keep=v=>{try{v?localStorage.setItem('ludo-room',v):localStorage.removeItem('ludo-room')}catch(e){}};
 function connect(first){
@@ -60,7 +83,7 @@ function connect(first){
   ws.onmessage=e=>{
     clearTimeout(tm);const d=JSON.parse(e.data);
     if(d.err){G=null;keep('');ws.onclose=null;ws.close();return lobby(d.err)}
-    if(d.s){G=d.s;code=d.code||code;isHost=G.host===me;keep(code);draw()}
+    if(d.s){const pv=G;G=d.s;code=d.code||code;isHost=G.host===me;keep(code);sfx(pv,G);draw()}
   };
   ws.onclose=()=>{
     if(G){wait('Connection lost. Reconnecting…');setTimeout(()=>connect({t:'join',code,n:myName,id:me}),2000)}
@@ -104,7 +127,7 @@ function board(mv){
 }
 function draw(){
   if(!G)return;const my=seatOf(me);
-  let h=`<div class="card"><div class="row"><b>Game ${code}</b><span class="mut">share this code with friends</span></div><div class="row" style="margin-top:8px">`;
+  let h=`<div class="card"><div class="row"><b>Game ${code}</b><span class="mut">share this code with friends</span><button class="alt" style="margin-left:auto" onclick="toggleSnd()">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div><div class="row" style="margin-top:8px">`;
   C.forEach(c=>{const o=G.seats[c];
     h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':''):(G.phase==='lobby'&&!my?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">Sit as ${NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
   h+='</div>';
