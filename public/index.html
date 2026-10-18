@@ -142,6 +142,12 @@ function join(){
   if(!nameOk())return;code=($('cd').value||'').trim().toUpperCase();if(code.length<3)return;
   wait('Connecting… (the first connection can take up to a minute)');connect({t:'join',code,n:myName,id:me});
 }
+function leaveRoom(){
+  if(!confirm('Leave this game?'))return;
+  send({t:'leave'});keep('');G=null;clearTimeout(tm);
+  if(ws){ws.onclose=null;ws.close();ws=null}
+  lobby();
+}
 function send(d){if(ws&&ws.readyState===1)ws.send(JSON.stringify(d))}
 const seated=()=>C.filter(c=>G.seats[c]);
 const seatOf=id=>C.find(c=>G.seats[c]===id);
@@ -175,9 +181,9 @@ function draw(){
   if(!G)return;const my=seatOf(me);
   let h=`<div class="card"><div class="row"><b>Game ${code}</b><span class="mut">share this code with friends</span><select onchange="setDice(this.value)" style="margin-left:auto;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)">${DICE.map((d,i)=>`<option value="${i}"${i===dsel?' selected':''}>${d.n}</option>`).join('')}</select><button class="alt" onclick="toggleSnd()">${snd?'🔊 Sound on':'🔇 Sound off'}</button></div><div class="row" style="margin-top:8px">`;
   C.forEach(c=>{const o=G.seats[c];
-    h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':'')+(G.cut&&G.cut[c]?' ⚔':''):(G.phase==='lobby'&&!my?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">Sit as ${NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
+    h+=`<div class="seat ${G.phase==='play'&&G.turn===c?'on':''}" style="border-color:${COL[c]}">${o?esc(G.names[c])+(o===me?' (you)':'')+(G.cut&&G.cut[c]?' ⚔':''):(G.phase==='lobby'?`<a href="#" onclick="send({t:'sit',c:'${c}',n:myName});return false" style="color:inherit">${my?'Move here':'Sit as '+NM[c]}</a>`:'<span class="mut">empty</span>')}</div>`});
   h+='</div>';
-  if(G.phase==='lobby'){h+=`<p>${G.winner?`🏆 ${esc(G.names[G.winner])} won. `:''}${isHost?`<button onclick="send({t:'start'})" ${seated().length<2?'disabled':''}>Start game</button>`:'<span class="mut">Waiting for the host to start…</span>'}</p></div>`;
+  if(G.phase==='lobby'){h+=`<p>${G.winner?`🏆 ${esc(G.names[G.winner])} won. `:''}${isHost?`<button onclick="send({t:'start'})" ${seated().length<2?'disabled':''}>Start game</button>`:'<span class="mut">Waiting for the host to start…</span>'}</p><p class="mut" style="margin:0">Pick any free color. With exactly 2 players, seats are set opposite each other when the game starts.</p></div>`;
     $('app').innerHTML=h;return}
   const myTurn=G.seats[G.turn]===me&&!G.winner,mv=myTurn&&G.rolled?G.mv:null;
   h+=`</div><div class="card">${board(mv)}<div class="row" style="margin-top:10px;justify-content:space-between"><div class="row"><span class="dice" style="color:${G.last?COL[G.last]:'inherit'}">${PIPS[G.dice]||'🎲'}</span><button onclick="send({t:'roll'})" ${myTurn&&!G.rolled?'':'disabled'}>Roll dice</button></div>
