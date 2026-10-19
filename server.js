@@ -46,27 +46,11 @@ function newGame(id, n) {
 }
 function nextTurn(G) { const s = seated(G); G.turn = s[(s.indexOf(G.turn) + 1) % s.length]; }
 
-function broadcastRoomList() {
-  const activeRooms = [];
-  rooms.forEach((r, code) => {
-    if (r.G.phase === 'lobby') {
-      activeRooms.push({
-        code,
-        host: r.G.names['R'] || 'Host',
-        players: C.filter(c => r.G.seats[c]).length
-      });
-    }
-  });
-  const msg = JSON.stringify({ type: 'room_list', rooms: activeRooms });
-  wss.clients.forEach(w => { if (!w.code && w.readyState === 1) w.send(msg); });
-}
-
 function act(G, d, from) {
   if (d.t === 'sit') {
     if (G.phase !== 'lobby' || !C.includes(d.c) || G.seats[d.c]) return;
     const old = seatOf(G, from); if (old) { G.seats[old] = null; delete G.names[old]; }
     G.seats[d.c] = from; G.names[d.c] = clean(d.n);
-    broadcastRoomList();
   } else if (d.t === 'start') {
     if (from !== G.host || G.phase !== 'lobby' || seated(G).length < 2) return;
     const s2 = seated(G);
@@ -75,13 +59,11 @@ function act(G, d, from) {
       if (OP[a] !== b) { const nb = OP[a]; G.seats[nb] = G.seats[b]; G.names[nb] = G.names[b]; G.seats[b] = null; delete G.names[b]; }
     }
     G.phase = 'play'; G.turn = seated(G)[0]; G.log = NM[G.turn] + ' starts — roll!';
-    broadcastRoomList();
   } else if (d.t === 'again') {
     if (from !== G.host || !G.winner) return;
     C.forEach(c => G.tokens[c] = [-1, -1, -1, -1]);
     G.phase = 'lobby'; G.winner = null; G.rolled = false; G.dice = 0; G.mv = [];
     C.forEach(c => { G.cut[c] = false; G.ones[c] = 0; }); G.log = 'New game — start when ready';
-    broadcastRoomList();
   } else if (d.t === 'roll') {
     if (G.phase !== 'play' || G.seats[G.turn] !== from || G.rolled || G.winner) return;
     const v = 1 + Math.floor(Math.random() * 6), c = G.turn, nm = G.names[c];
@@ -128,15 +110,19 @@ function act(G, d, from) {
 function removePlayer(G, id) {
   const c = seatOf(G, id); if (!c) return;
   const nm = G.names[c];
-  if (G.phase === 'play' && !G.winner && G.turn === c) { G.rolled = false; G.mv = []; nextTurn(G); }
+  const wasTurn = G.phase === 'play' && !G.winner && G.turn === c;
   G.seats[c] = null; delete G.names[c]; G.tokens[c] = [-1, -1, -1, -1]; G.cut[c] = false; G.ones[c] = 0;
   const s = seated(G);
   if (G.host === id && s.length) G.host = G.seats[s[0]];
   if (G.phase === 'play' && !G.winner) {
-    if (s.length === 1) { G.winner = s[0]; G.rolled = false; G.mv = []; G.log = `🏆 ${G.names[s[0]]} wins — everyone else left!`; }
-    else G.log = `${nm} left the game`;
+    if (s.length === 1) {
+      G.winner = s[0]; G.rolled = false; G.mv = [];
+      G.log = `🏆 ${G.names[s[0]]} wins — everyone else left!`;
+    } else {
+      if (wasTurn) { G.rolled = false; G.mv = []; nextTurn(G); }
+      G.log = `${nm} left the game`;
+    }
   }
-  broadcastRoomList();
 }
 function broadcast(code) {
   const r = rooms.get(code); if (!r) return;
@@ -144,20 +130,10 @@ function broadcast(code) {
   r.clients.forEach(w => { if (w.readyState === 1) w.send(msg); });
 }
 const err = (w, e) => w.send(JSON.stringify({ err: e }));
-function leave(w) { const r = w.code && rooms.get(w.code); if (r) { r.clients.delete(w); broadcastRoomList(); } }
+function leave(w) { const r = w.code && rooms.get(w.code); if (r) { r.clients.delete(w); } }
 
 wss.on('connection', w => {
   w.alive = true; w.on('pong', () => w.alive = true);
-  
-  // Send initial room list upon connection if not in a room
-  const activeRooms = [];
-  rooms.forEach((r, code) => {
-    if (r.G.phase === 'lobby') {
-      activeRooms.push({ code, host: r.G.names['R'] || 'Host', players: C.filter(c => r.G.seats[c]).length });
-    }
-  });
-  w.send(JSON.stringify({ type: 'room_list', rooms: activeRooms }));
-
   w.on('message', raw => {
     let d; try { d = JSON.parse(raw); } catch (e) { return; }
     if (!d || typeof d.t !== 'string') return;
@@ -168,7 +144,6 @@ wss.on('connection', w => {
         let code; do { code = Array.from({ length: 5 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join(''); } while (rooms.has(code));
         rooms.set(code, { G: newGame(id, clean(d.n)), clients: new Set(), empty: 0 });
         w.code = code;
-        broadcastRoomList();
       } else {
         const code = String(d.code || '').toUpperCase().slice(0, 5);
         if (!rooms.has(code)) return err(w, 'No game with that code.');
@@ -176,8 +151,8 @@ wss.on('connection', w => {
       }
       w.id = id;
       const r = rooms.get(w.code); r.clients.add(w); r.empty = 0;
+      if (r.timers && r.timers[id]) { clearTimeout(r.timers[id]); delete r.timers[id]; }
       const c = seatOf(r.G, id); if (c) r.G.names[c] = clean(d.n);
-      broadcastRoomList();
       return broadcast(w.code);
     }
     if (d.t === 'leave') {
@@ -188,7 +163,23 @@ wss.on('connection', w => {
     const r = w.code && rooms.get(w.code); if (!r || !w.id) return;
     act(r.G, d, w.id); broadcast(w.code);
   });
-  w.on('close', () => leave(w));
+  w.on('close', () => {
+    const code = w.code, id = w.id;
+    const r = code && rooms.get(code);
+    if (!r || !id) return;
+    r.clients.delete(w);
+    if (r.clients.size === 0) return;            // room idles; 30-min cleanup handles it
+    // Others still here → give this player 60 s to reconnect before vacating
+    if (!r.timers) r.timers = {};
+    if (r.timers[id]) clearTimeout(r.timers[id]);
+    r.timers[id] = setTimeout(() => {
+      delete r.timers[id];
+      const r2 = rooms.get(code); if (!r2) return;
+      let back = false;
+      r2.clients.forEach(cw => { if (cw.id === id) back = true; });
+      if (!back) { removePlayer(r2.G, id); broadcast(code); }
+    }, 60000);
+  });
 });
 
 setInterval(() => {
@@ -196,7 +187,7 @@ setInterval(() => {
   rooms.forEach((r, code) => {
     if (r.clients.size === 0) {
       if (!r.empty) r.empty = Date.now();
-      else if (Date.now() - r.empty > 1800000) { rooms.delete(code); broadcastRoomList(); }
+      else if (Date.now() - r.empty > 1800000) rooms.delete(code); // Clean up after 30 mins of zero active connections
     } else {
       r.empty = 0;
     }
@@ -204,4 +195,3 @@ setInterval(() => {
 }, 30000);
 
 server.listen(process.env.PORT || 3000, () => console.log('Ludo server running'));
-    
