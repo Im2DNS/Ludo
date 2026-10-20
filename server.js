@@ -4,7 +4,8 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/health', (q, r) => r.send('ok'));
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, maxPayload: 2048 });
+server.on('connection', s => s.setNoDelay(true));   // send small game messages immediately (no Nagle delay)
+const wss = new WebSocketServer({ server, maxPayload: 2048, perMessageDeflate: false });
 const C = ['R', 'G', 'Y', 'B'], NM = { R: 'Red', G: 'Green', Y: 'Yellow', B: 'Blue' };
 const ST = { R: 0, G: 13, Y: 26, B: 39 }, SAFE = new Set([0, 13, 26, 39]); // start squares only
 const rooms = new Map();
@@ -150,7 +151,9 @@ wss.on('connection', w => {
       return;
     }
     const r = w.code && rooms.get(w.code); if (!r || !w.id) return;
-    act(r.G, d, w.id); broadcast(w.code);
+    const before = JSON.stringify(r.G);
+    act(r.G, d, w.id);
+    if (JSON.stringify(r.G) !== before) broadcast(w.code);   // ignore no-op/duplicate clicks instead of re-sending state to everyone
   });
   w.on('close', () => {
     const code = w.code, id = w.id;
@@ -180,6 +183,5 @@ setInterval(() => {
       r.empty = 0;
     }
   });
-}, 30000);
+}, 15000);   // ping often: keeps proxies from idling connections out and detects dead ones sooner
 server.listen(process.env.PORT || 3000, () => console.log('Ludo server running'));
-        
